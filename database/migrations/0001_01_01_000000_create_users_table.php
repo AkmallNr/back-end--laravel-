@@ -21,7 +21,7 @@ return new class extends Migration
 
         Schema::create('sessions', function (Blueprint $table) {
             $table->string('id')->primary();         // ID unik untuk session
-            $table->foreignId('userId')->nullable(); // ID user (jika user login)
+            $table->foreignId('user_id')->nullable(); // ID user (jika user login)
             $table->string('ip_address', 45)->nullable(); // Alamat IP pengguna
             $table->text('user_agent')->nullable();  // User agent (browser info)
             $table->text('payload');                 // Isi session (dalam bentuk serialized)

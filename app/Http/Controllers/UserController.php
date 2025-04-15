@@ -103,14 +103,14 @@ class UserController extends Controller
 
 
     // 🔹 Membuat user baru
-    public function create(Request $request)
+    public function createUser(Request $request)
     {
         $user = User::create($request->all());
         return new UserResource($user);
     }
 
     // 🔹 Menghapus user berdasarkan ID
-    public function delete($userId)
+    public function deleteUser($userId)
     {
         $user = User::find($userId);
         if ($user) {
