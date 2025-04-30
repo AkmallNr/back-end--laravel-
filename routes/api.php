@@ -1,54 +1,65 @@
-<?php
+    <?php
 
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\UserController;
+    use Illuminate\Support\Facades\Route;
+    use App\Http\Controllers\UserController;
+    use Illuminate\Http\Request;
 
 
 
-Route::prefix('users')->group(function () {
-    // Mendapatkan semua user
-    Route::get('/', [UserController::class, 'getUsers']);
+    Route::prefix('users')->group(function () {
+        // Mendapatkan semua user
+        Route::get('/', [UserController::class, 'getUsers']);
 
-    // Mendapatkan grup berdasarkan userId
-    Route::get('{userId}/groups', [UserController::class, 'getGroups']);
+        // Mendapatkan grup berdasarkan userId
+        Route::get('{userId}/groups', [UserController::class, 'getGroups']);
 
-    // Mendapatkan proyek berdasarkan userId
-    Route::get('{userId}/projects', [UserController::class, 'getProjectsByUser']);
+        // Mendapatkan proyek berdasarkan userId
+        Route::get('{userId}/projects', [UserController::class, 'getProjectsByUser']);
 
-    // Mendapatkan proyek berdasarkan groupId
-    Route::get('{userId}/groups/{groupId}/projects', [UserController::class, 'getProjectsByGroup']);
+        // Mendapatkan proyek berdasarkan groupId
+        Route::get('{userId}/groups/{groupId}/projects', [UserController::class, 'getProjectsByGroup']);
 
-    // Mendapatkan tugas berdasarkan projectId
-    Route::get('{userId}/groups/{groupId}/projects/{projectId}/tasks', [UserController::class, 'getTasks']);
+        // Mendapatkan tugas berdasarkan projectId
+        Route::get('{userId}/groups/{groupId}/projects/{projectId}/tasks', [UserController::class, 'getTasks']);
 
-    // Membuat user baru
-    Route::post('/', [UserController::class, 'createUser']);
+        // Membuat user baru
+        Route::post('/', [UserController::class, 'createUser']);
 
-    // Menghapus user berdasarkan ID
-    Route::delete('{userId}', [UserController::class, 'deleteUser']);
+        // Menghapus user berdasarkan ID
+        Route::delete('{userId}', [UserController::class, 'deleteUser']);
 
-    // Menambahkan group ke user berdasarkan userId
-    Route::post('{userId}/groups', [UserController::class, 'addGroupToUser']);
+        // Menambahkan group ke user berdasarkan userId
+        Route::post('{userId}/groups', [UserController::class, 'addGroupToUser']);
 
-    // Menambahkan project ke group
-    Route::post('{userId}/groups/{groupId}/projects', [UserController::class, 'addProjectToGroup']);
+        // Menambahkan project ke group
+        Route::post('{userId}/groups/{groupId}/projects', [UserController::class, 'addProjectToGroup']);
 
-    // Menambahkan task ke project
-    Route::post('{userId}/groups/{groupId}/projects/{projectId}/tasks', [UserController::class, 'addTaskToProject']);
+        // Menambahkan task ke project
+        Route::post('{userId}/groups/{groupId}/projects/{projectId}/tasks', [UserController::class, 'addTaskToProject']);
 
-    // Menghapus group
-    Route::delete('{userId}/groups/{groupId}', [UserController::class, 'deleteGroup']);
+        // Menghapus group
+        Route::delete('{userId}/groups/{groupId}', [UserController::class, 'deleteGroup']);
 
-    // Menghapus project
-    Route::delete('{userId}/groups/{groupId}/projects/{projectId}', [UserController::class, 'deleteProject']);
+        // Menghapus project
+        Route::delete('{userId}/groups/{groupId}/projects/{projectId}', [UserController::class, 'deleteProject']);
 
-    // Menghapus task
-    Route::delete('{userId}/groups/{groupId}/projects/{projectId}/tasks/{taskId}', [UserController::class, 'deleteTask']);
+        // Menghapus task
+        Route::delete('{userId}/groups/{groupId}/projects/{projectId}/tasks/{taskId}', [UserController::class, 'deleteTask']);
 
-    // Update task
-    Route::put('{userId}/groups/{groupId}/projects/{projectId}/tasks/{taskId}', [UserController::class, 'updateTask']);
+        // Update task
+        Route::put('{userId}/groups/{groupId}/projects/{projectId}/tasks/{taskId}', [UserController::class, 'updateTask']);
 
-    // Update project
-    Route::put('{userId}/groups/{groupId}/projects/{projectId}', [UserController::class, 'updateProject']);
-});
+        // Update project
+        Route::put('{userId}/groups/{groupId}/projects/{projectId}', [UserController::class, 'updateProject']);
+    });
+
+    Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
+        return $request->user();
+    });
+
+    // Route untuk register
+    Route::post('/register', [UserController::class, 'register']);
+
+    // Route untuk login
+    Route::post('/login', [UserController::class, 'login']);
 

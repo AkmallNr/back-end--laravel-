@@ -6,38 +6,29 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('users', function (Blueprint $table) {
-            $table->id(); // otomatis bigint dan auto-increment
+            $table->id();
             $table->string('name');
-            $table->string('email')->unique()->nullable(); // nullable sesuai model Java
-            $table->string('pass')->nullable();
+            $table->string('email')->unique();
+            $table->string('password'); // Mengganti 'pass' menjadi 'password'
             $table->timestamps();
         });
 
         Schema::create('sessions', function (Blueprint $table) {
-            $table->string('id')->primary();         // ID unik untuk session
-            $table->foreignId('user_id')->nullable(); // ID user (jika user login)
-            $table->string('ip_address', 45)->nullable(); // Alamat IP pengguna
-            $table->text('user_agent')->nullable();  // User agent (browser info)
-            $table->text('payload');                 // Isi session (dalam bentuk serialized)
-            $table->integer('last_activity');        // Timestamp aktivitas terakhir
+            $table->string('id')->primary();
+            $table->foreignId('user_id')->nullable()->constrained()->onDelete('cascade');
+            $table->string('ip_address', 45)->nullable();
+            $table->text('user_agent')->nullable();
+            $table->text('payload');
+            $table->integer('last_activity');
         });
-
-
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('users');
         Schema::dropIfExists('sessions');
-
     }
 };
