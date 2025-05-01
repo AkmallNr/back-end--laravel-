@@ -17,6 +17,7 @@ class ProjectResource extends JsonResource
             'startDate' => $this->startDate,
             'endDate' => $this->endDate,
             'groupId' => $this->groupId,
+            'userId' => $this->userId,
             'tasks' => TaskResource::collection($this->tasks),
         ];
     }

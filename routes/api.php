@@ -51,6 +51,11 @@
 
         // Update project
         Route::put('{userId}/groups/{groupId}/projects/{projectId}', [UserController::class, 'updateProject']);
+
+        Route::get('{userId}/quotes', [UserController::class, 'getQuotes']);
+        Route::post('{userId}/quotes', [UserController::class, 'addQuote']);
+        Route::put('{userId}/quotes/{quoteId}', [UserController::class, 'updateQuote']);
+        Route::delete('{userId}/quotes/{quoteId}', [UserController::class, 'deleteQuote']);
     });
 
     Route::middleware('auth:sanctum')->get('/user', function (Request $request) {

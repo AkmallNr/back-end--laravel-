@@ -14,7 +14,9 @@ class UserResource extends JsonResource
             'id' => $this->id,
             'name' => $this->name,
             'email' => $this->email,
+            'quotes' => QuoteResource::collection($this->quotes),
             'groups' => GroupResource::collection($this->groups),
         ];
     }
 }
+

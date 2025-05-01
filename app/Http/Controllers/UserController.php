@@ -7,10 +7,12 @@ use App\Models\User;
 use App\Models\Group;
 use App\Models\Project;
 use App\Models\Task;
+use App\Models\Quote;
 use App\Http\Resources\UserResource;
 use App\Http\Resources\GroupResource;
 use App\Http\Resources\ProjectResource;
 use App\Http\Resources\TaskResource;
+use App\Http\Resources\QuoteResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Hash;
@@ -60,6 +62,86 @@ class UserController extends Controller
         }
 
         return ProjectResource::collection($projects);
+    }
+
+    public function getQuotes($userId)
+    {
+        $user = User::find($userId);
+        if (!$user) {
+            return response()->json(['message' => 'User not found'], Response::HTTP_NOT_FOUND);
+        }
+
+        $quotes = $user->quotes;
+        return QuoteResource::collection($quotes);
+    }
+
+    public function addQuote(Request $request, $userId)
+    {
+        $user = User::find($userId);
+        if (!$user) {
+            return response()->json(['message' => 'User not found'], Response::HTTP_NOT_FOUND);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'content' => 'required|string|max:500'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        $quote = new Quote($request->all());
+        $user->quotes()->save($quote);
+
+        return new QuoteResource($quote);
+    }
+
+    public function updateQuote(Request $request, $userId, $quoteId)
+    {
+        $user = User::find($userId);
+        if (!$user) {
+            return response()->json(['message' => 'User not found'], Response::HTTP_NOT_FOUND);
+        }
+
+        $quote = $user->quotes()->find($quoteId);
+        if (!$quote) {
+            return response()->json(['message' => 'Quote not found'], Response::HTTP_NOT_FOUND);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'content' => 'sometimes|required|string|max:500',
+            'author' => 'sometimes|required|string|max:100',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        $quote->update($request->all());
+        return new QuoteResource($quote);
+    }
+
+
+    public function deleteQuote($userId, $quoteId)
+    {
+        $user = User::find($userId);
+        if (!$user) {
+            return response()->json(['message' => 'User not found'], Response::HTTP_NOT_FOUND);
+        }
+
+        $quote = $user->quotes()->find($quoteId);
+        if (!$quote) {
+            return response()->json(['message' => 'Quote not found'], Response::HTTP_NOT_FOUND);
+        }
+
+        $quote->delete();
+        return response()->json(['message' => 'Quote deleted'], Response::HTTP_OK);
     }
 
     // 🔹 Mendapatkan semua proyek berdasarkan groupId

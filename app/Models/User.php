@@ -25,6 +25,16 @@ class User extends Authenticatable
     {
         return $this->hasMany(Group::class, 'userId');
     }
+    
+    public function projects(): HasMany
+    {
+        return $this->hasMany(Project::class, 'userId');
+    }
+
+    public function quotes(): HasMany
+    {
+        return $this->hasMany(Quote::class, 'userId');
+    }
 
     public function setPasswordAttribute($value)
     {
