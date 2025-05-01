@@ -7,12 +7,14 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
+
 
 class User extends Authenticatable
 {
     use HasFactory, Notifiable;
 
-    protected $fillable = ['name', 'email', 'password'];
+    protected $fillable = ['name', 'email', 'password', 'profile_picture'];
 
     protected $hidden = ['password', 'remember_token'];
 
@@ -25,7 +27,7 @@ class User extends Authenticatable
     {
         return $this->hasMany(Group::class, 'userId');
     }
-    
+
     public function projects(): HasMany
     {
         return $this->hasMany(Project::class, 'userId');
@@ -40,4 +42,14 @@ class User extends Authenticatable
     {
         $this->attributes['password'] = Hash::make($value);
     }
+
+    public function getProfilePictureAttribute($value)
+    {
+        /** @var \Illuminate\Filesystem\FilesystemAdapter $disk */
+        $disk = Storage::disk('public');
+        return $value
+            ? $disk->url($value)
+            : asset('images/default-profile.png');
+    }
+
 }

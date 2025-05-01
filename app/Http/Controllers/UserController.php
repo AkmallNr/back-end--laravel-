@@ -17,20 +17,13 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
-
-
+use Illuminate\Support\Facades\Storage;
 
 class UserController extends Controller
 {
-    // public function __construct()
-    // {
-    //     $this->middleware('auth:api');
-    // }
-
     // 🔹 Mendapatkan semua user
     public function getUsers()
     {
-        // $users = User::all();
         return UserResource::collection(User::all());
     }
 
@@ -64,6 +57,7 @@ class UserController extends Controller
         return ProjectResource::collection($projects);
     }
 
+    // 🔹 Mendapatkan semua quotes berdasarkan userId
     public function getQuotes($userId)
     {
         $user = User::find($userId);
@@ -75,6 +69,7 @@ class UserController extends Controller
         return QuoteResource::collection($quotes);
     }
 
+    // 🔹 Menambahkan quote
     public function addQuote(Request $request, $userId)
     {
         $user = User::find($userId);
@@ -99,6 +94,7 @@ class UserController extends Controller
         return new QuoteResource($quote);
     }
 
+    // 🔹 Update quote
     public function updateQuote(Request $request, $userId, $quoteId)
     {
         $user = User::find($userId);
@@ -127,7 +123,7 @@ class UserController extends Controller
         return new QuoteResource($quote);
     }
 
-
+    // 🔹 Menghapus quote
     public function deleteQuote($userId, $quoteId)
     {
         $user = User::find($userId);
@@ -170,12 +166,10 @@ class UserController extends Controller
             return response()->json(['message' => 'Project not found'], Response::HTTP_NOT_FOUND);
         }
 
-        // Log untuk memverifikasi relasi
         Log::info('Project Group ID: ' . $project->group->id);
         Log::info('Project ID: ' . $groupId);
         Log::info('Project User ID: ' . $userId);
         Log::info('Project Group User ID: ' . $project->group->user->id);
-
 
         if ($project->group->id != $groupId || $project->group->user->id != $userId) {
             return response()->json(['message' => 'Forbidden'], Response::HTTP_FORBIDDEN);
@@ -184,7 +178,6 @@ class UserController extends Controller
         $tasks = $project->tasks;
         return TaskResource::collection($tasks);
     }
-
 
     // 🔹 Membuat user baru
     public function createUser(Request $request)
@@ -242,7 +235,6 @@ class UserController extends Controller
     {
         $project = Project::with('group.user')->find($projectId);
 
-        // Debug untuk memastikan relasi sudah terambil dengan benar
         Log::info('Project and group information:', [
             'project' => $project,
             'group' => $project->group,
@@ -259,13 +251,11 @@ class UserController extends Controller
             return response()->json(['message' => 'Forbidden'], Response::HTTP_FORBIDDEN);
         }
 
-        // Lanjutkan proses penambahan task
         $task = new Task($request->all());
         $project->tasks()->save($task);
 
         return new TaskResource($task);
     }
-
 
     // 🔹 Menghapus Group
     public function deleteGroup($userId, $groupId)
@@ -332,13 +322,14 @@ class UserController extends Controller
         return new ProjectResource($project);
     }
 
-        // 🔹 Register user baru
+    // 🔹 Register user baru
     public function register(Request $request)
     {
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8|confirmed',
+            'profile_picture' => 'sometimes|image|mimes:jpeg,png,jpg,gif|max:2048', // Max 2MB
         ]);
 
         if ($validator->fails()) {
@@ -348,16 +339,24 @@ class UserController extends Controller
             ], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-        $user = User::create([
+        $data = [
             'name' => $request->name,
             'email' => $request->email,
-            'password' => $request->password, // Akan di-hash oleh mutator
-        ]);
+            'password' => $request->password,
+        ];
+
+        // Handle profile picture upload
+        if ($request->hasFile('profile_picture')) {
+            $path = $request->file('profile_picture')->store('profile_pictures', 'public');
+            $data['profile_picture'] = $path;
+        }
+
+        $user = User::create($data);
 
         return new UserResource($user);
     }
 
-        // 🔹 Login user
+    // 🔹 Login user
     public function login(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -382,5 +381,36 @@ class UserController extends Controller
 
         return new UserResource($user);
     }
-}
 
+    // 🔹 Update profile picture
+    public function updateProfilePicture(Request $request, $userId)
+    {
+        $user = User::find($userId);
+        if (!$user) {
+            return response()->json(['message' => 'User not found'], Response::HTTP_NOT_FOUND);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'profile_picture' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048', // Max 2MB
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        // Delete old profile picture if it exists
+        if ($user->profile_picture) {
+            Storage::disk('public')->delete($user->profile_picture);
+        }
+
+        // Store new profile picture
+        $path = $request->file('profile_picture')->store('profile_pictures', 'public');
+        $user->profile_picture = $path;
+        $user->save();
+
+        return new UserResource($user);
+    }
+}

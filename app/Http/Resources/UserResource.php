@@ -1,7 +1,5 @@
 <?php
 
-// app/Http/Resources/UserResource.php
-
 namespace App\Http\Resources;
 
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -14,9 +12,9 @@ class UserResource extends JsonResource
             'id' => $this->id,
             'name' => $this->name,
             'email' => $this->email,
-            'quotes' => QuoteResource::collection($this->quotes),
             'groups' => GroupResource::collection($this->groups),
+            'profile_picture' => $this->profile_picture ? asset('storage/' . $this->profile_picture) : null,
+            'quotes' => QuoteResource::collection($this->quotes)
         ];
     }
 }
-

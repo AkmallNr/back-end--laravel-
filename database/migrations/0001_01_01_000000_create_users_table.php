@@ -12,7 +12,8 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('email')->unique();
-            $table->string('password'); // Mengganti 'pass' menjadi 'password'
+            $table->string('password');
+            $table->string('profile_picture')->nullable()->after('password'); // Add profile_picture column
             $table->timestamps();
         });
 
