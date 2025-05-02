@@ -408,12 +408,12 @@ class UserController extends Controller
 
         // Store new profile picture
         // Periksa apakah ada file yang diupload
-        if ($request->hasFile('image')) {
+        if ($request->hasFile('profile_picture')) {
             // Generate filename unik berdasarkan waktu
-            $filename = time() . '.' . $request->image->extension();
+            $filename = time() . '.' . $request->profile_picture->extension();
 
             // Simpan gambar di storage/public
-            $path = $request->image->storeAs('public/profile_pictures', $filename);
+            $path = $request->profile_picture->storeAs('public/profile_pictures', $filename);
 
             // Simpan nama file gambar ke database
             $user->profile_picture = $filename;
@@ -422,7 +422,7 @@ class UserController extends Controller
             // Mengembalikan response dengan URL gambar yang benar
             return response()->json([
                 'message' => 'Profile picture updated',
-                'profile_picture_url' => asset('storage/profile_pictures/' . $filename)
+                'profile_picture' => asset('profile_pictures/' . $filename)
             ]);
         }
 

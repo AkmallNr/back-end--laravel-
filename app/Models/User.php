@@ -51,7 +51,7 @@ class User extends Authenticatable
         }
 
         // Menyusun URL gambar dengan benar jika ada nilai
-        return Storage::url('profile_pictures/' . $value);
+        return asset('storage/profile_pictures/' . $value);
     }
 
 
