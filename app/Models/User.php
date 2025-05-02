@@ -45,11 +45,14 @@ class User extends Authenticatable
 
     public function getProfilePictureAttribute($value)
     {
-        /** @var \Illuminate\Filesystem\FilesystemAdapter $disk */
-        $disk = Storage::disk('public');
-        return $value
-            ? $disk->url($value)
-            : asset('images/default-profile.png');
+        // Jika nilai profile_picture kosong (null atau string kosong)
+        if (empty($value)) {
+            return null; // Atau bisa return URL gambar default jika kamu mau
+        }
+
+        // Menyusun URL gambar dengan benar jika ada nilai
+        return Storage::url('profile_pictures/' . $value);
     }
+
 
 }

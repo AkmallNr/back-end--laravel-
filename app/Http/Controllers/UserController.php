@@ -407,9 +407,28 @@ class UserController extends Controller
         }
 
         // Store new profile picture
-        $path = $request->file('profile_picture')->store('profile_pictures', 'public');
-        $user->profile_picture = $path;
-        $user->save();
+        // Periksa apakah ada file yang diupload
+        if ($request->hasFile('image')) {
+            // Generate filename unik berdasarkan waktu
+            $filename = time() . '.' . $request->image->extension();
+
+            // Simpan gambar di storage/public
+            $path = $request->image->storeAs('public/profile_pictures', $filename);
+
+            // Simpan nama file gambar ke database
+            $user->profile_picture = $filename;
+            $user->save();
+
+            // Mengembalikan response dengan URL gambar yang benar
+            return response()->json([
+                'message' => 'Profile picture updated',
+                'profile_picture_url' => asset('storage/profile_pictures/' . $filename)
+            ]);
+        }
+
+        return response()->json([
+            'message' => 'No image uploaded'
+        ], 400); // 400 berarti ada masalah dengan request, bisa jadi tidak ada gambar yang diupload
 
         return new UserResource($user);
     }
