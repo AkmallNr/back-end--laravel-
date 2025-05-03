@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 
 
 class User extends Authenticatable
@@ -45,6 +46,7 @@ class User extends Authenticatable
 
     public function getProfilePictureAttribute($value)
     {
+        Log::info('Isi profile_picture value:', ['value' => $value]);
         // Jika nilai profile_picture kosong (null atau string kosong)
         if (empty($value)) {
             return null; // Atau bisa return URL gambar default jika kamu mau

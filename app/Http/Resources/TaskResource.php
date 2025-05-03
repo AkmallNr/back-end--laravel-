@@ -18,6 +18,7 @@ class TaskResource extends JsonResource
             'reminder' => $this->reminder,
             'priority' => $this->priority,
             'status' => $this->status,
+            'quoteid' => $this->quoteId,
             'attachments' => AttachmentResource::collection($this->attachments),
         ];
     }

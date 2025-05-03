@@ -11,7 +11,7 @@ class Task extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['name', 'description', 'deadline', 'reminder', 'priority', 'status', 'projectId'];
+    protected $fillable = ['name', 'description', 'deadline', 'reminder', 'priority', 'status', 'projectId', 'quoteId'];
 
     // Relasi ke Project (Many to One)
     public function project()

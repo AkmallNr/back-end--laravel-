@@ -50,10 +50,16 @@ Route::prefix('users')->group(function () {
     // Update project
     Route::put('{userId}/groups/{groupId}/projects/{projectId}', [UserController::class, 'updateProject']);
 
-    // Quote routes
+    // Get quote
     Route::get('{userId}/quotes', [UserController::class, 'getQuotes']);
+
+    // Add quote
     Route::post('{userId}/quotes', [UserController::class, 'addQuote']);
+
+    // Update quote
     Route::put('{userId}/quotes/{quoteId}', [UserController::class, 'updateQuote']);
+
+    // Delete quote
     Route::delete('{userId}/quotes/{quoteId}', [UserController::class, 'deleteQuote']);
 
     // Update profile picture
