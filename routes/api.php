@@ -29,7 +29,7 @@ Route::prefix('users')->group(function () {
     // Menambahkan group ke user berdasarkan userId
     Route::post('{userId}/groups', [UserController::class, 'addGroupToUser']);
 
-    //  // Menambahkan project ke group
+    // Menambahkan project ke group
     Route::post('{userId}/groups/{groupId}/projects', [UserController::class, 'addProjectToGroup']);
 
     // Menambahkan task ke project
@@ -64,6 +64,9 @@ Route::prefix('users')->group(function () {
 
     // Update profile picture
     Route::post('{userId}/profile-picture', [UserController::class, 'updateProfilePicture']);
+
+    // Login dengan Google
+    Route::post('{userId}/google-login', [UserController::class, 'loginWithGoogle']);
 });
 
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {

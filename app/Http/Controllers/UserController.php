@@ -18,9 +18,20 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
+use Kreait\Firebase\Factory;
+use Illuminate\Support\Str;
+use Kreait\Firebase\Auth as FirebaseAuth;
 
 class UserController extends Controller
 {
+    protected $firebaseAuth;
+
+    public function __construct()
+    {
+        $factory = (new Factory)->withServiceAccount(config('firebase.credentials'));
+        $this->firebaseAuth = $factory->createAuth();
+    }
+
     // 🔹 Mendapatkan semua user
     public function getUsers()
     {
@@ -375,7 +386,7 @@ class UserController extends Controller
 
         if (!$user || !Hash::check($request->password, $user->password)) {
             return response()->json([
-                'message-Auth' => 'Invalid credentials'
+                'message' => 'Invalid credentials'
             ], Response::HTTP_UNAUTHORIZED);
         }
 
@@ -425,5 +436,68 @@ class UserController extends Controller
         return response()->json([
             'message' => 'No image uploaded'
         ], Response::HTTP_BAD_REQUEST);
+    }
+
+    // 🔹 Login dengan Google
+    public function loginWithGoogle(Request $request, $userId)
+    {
+        // Validasi input
+        $validator = Validator::make($request->all(), [
+            'token' => 'required|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        $firebaseToken = $request->input('token');
+
+        try {
+            // Verifikasi token Firebase
+            $verifiedIdToken = $this->firebaseAuth->verifyIdToken($firebaseToken);
+            $firebaseUser = $verifiedIdToken->claims()->all();
+
+            // Ambil data pengguna dari token
+            $uid = $firebaseUser['sub']; // ID unik pengguna dari Firebase
+            $email = $firebaseUser['email'];
+            $name = $firebaseUser['name'] ?? 'Unknown';
+            $picture = $firebaseUser['picture'] ?? null;
+
+            // Cari atau buat pengguna di database
+            $user = User::firstOrCreate(
+                ['google_id' => $uid],
+                [
+                    'name' => $name,
+                    'email' => $email,
+                    'password' => Hash::make(\Illuminate\Support\Str::random(16)), // Password acak
+                    'profile_picture' => $picture ? basename($picture) : null, // Simpan nama file saja
+                ]
+            );
+
+            // Perbarui data pengguna jika sudah ada
+            if (!$user->wasRecentlyCreated) {
+                $user->update([
+                    'name' => $name,
+                    'email' => $email,
+                    'profile_picture' => $picture ? basename($picture) : $user->profile_picture,
+                ]);
+            }
+
+            // Pastikan userId yang diberikan sesuai dengan pengguna yang login
+            if ($user->id != $userId) {
+                return response()->json(['message' => 'User ID mismatch'], Response::HTTP_FORBIDDEN);
+            }
+
+            // Kembalikan respons dengan data pengguna
+            return new UserResource($user);
+        } catch (\Exception $e) {
+            Log::error('Firebase login error: ' . $e->getMessage());
+            return response()->json([
+                'message' => 'Login gagal: ' . $e->getMessage(),
+            ], Response::HTTP_UNAUTHORIZED);
+        }
     }
 }
