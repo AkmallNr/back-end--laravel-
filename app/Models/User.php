@@ -45,14 +45,9 @@ class User extends Authenticatable
 
     public function getProfilePictureAttribute($value)
     {
-        // Jika nilai profile_picture kosong (null atau string kosong)
         if (empty($value)) {
-            return null; // Atau bisa return URL gambar default jika kamu mau
+            return null; // atau URL default, misalnya: asset('storage/default.jpg')
         }
-
-        // Menyusun URL gambar dengan benar jika ada nilai
-        return asset('storage/profile_pictures/' . $value);
-    }
-
-
-}
+        // Kembalikan path relatif untuk fleksibilitas
+        return 'profile_pictures/' . $value;
+    }}
