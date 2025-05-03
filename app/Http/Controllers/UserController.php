@@ -391,7 +391,7 @@ class UserController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'profile_picture' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048', // Max 2MB
+            'profile_picture' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
         if ($validator->fails()) {
@@ -407,29 +407,23 @@ class UserController extends Controller
         }
 
         // Store new profile picture
-        // Periksa apakah ada file yang diupload
         if ($request->hasFile('profile_picture')) {
-            // Generate filename unik berdasarkan waktu
-            $filename = time() . '.' . $request->profile_picture->extension();
+            $filename = time() . '.' . $request->file('profile_picture')->extension();
+            $path = $request->file('profile_picture')->storeAs('profile_pictures', $filename, 'public');
 
-            // Simpan gambar di storage/public
-            $path = $request->profile_picture->storeAs('public/profile_pictures', $filename);
-
-            // Simpan nama file gambar ke database
+            // Simpan nama file ke database
             $user->profile_picture = $filename;
             $user->save();
 
-            // Mengembalikan response dengan URL gambar yang benar
+            // Kembalikan respons dengan URL yang benar
             return response()->json([
                 'message' => 'Profile picture updated',
-                'profile_picture' => asset('profile_pictures/' . $filename)
-            ]);
+                'profile_picture' => asset('storage/profile_pictures/' . $filename)
+            ], Response::HTTP_OK);
         }
 
         return response()->json([
             'message' => 'No image uploaded'
-        ], 400); // 400 berarti ada masalah dengan request, bisa jadi tidak ada gambar yang diupload
-
-        return new UserResource($user);
+        ], Response::HTTP_BAD_REQUEST);
     }
 }
