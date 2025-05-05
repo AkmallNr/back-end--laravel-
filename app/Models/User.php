@@ -51,5 +51,4 @@ class User extends Authenticatable
         }
         // Kembalikan path relatif untuk fleksibilitas
         return 'profile_pictures/' . $value;
-    }
-}
+    }}

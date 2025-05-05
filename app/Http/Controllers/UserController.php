@@ -393,6 +393,7 @@ class UserController extends Controller
         return new UserResource($user);
     }
 
+    // 🔹 Update profile picture
     public function updateProfilePicture(Request $request, $userId)
     {
         $user = User::find($userId);
@@ -413,21 +414,22 @@ class UserController extends Controller
 
         // Delete old profile picture if it exists
         if ($user->profile_picture) {
-            Storage::delete('profile_pictures/' . $user->profile_picture);
+            Storage::disk('public')->delete($user->profile_picture);
         }
 
         // Store new profile picture
         if ($request->hasFile('profile_picture')) {
             $filename = time() . '.' . $request->file('profile_picture')->extension();
-            $path = $request->file('profile_picture')->storeAs('profile_pictures', $filename);
+            $path = $request->file('profile_picture')->storeAs('profile_pictures', $filename, 'public');
 
             // Simpan nama file ke database
             $user->profile_picture = $filename;
             $user->save();
 
+            // Kembalikan respons dengan URL yang benar
             return response()->json([
                 'message' => 'Profile picture updated',
-                'profile_picture' => $user->profile_picture_url
+                'profile_picture' => asset('storage/profile_pictures/' . $filename)
             ], Response::HTTP_OK);
         }
 
@@ -435,7 +437,6 @@ class UserController extends Controller
             'message' => 'No image uploaded'
         ], Response::HTTP_BAD_REQUEST);
     }
-
 
     // 🔹 Login dengan Google (tanpa userId)
     public function loginWithGoogle(Request $request)
