@@ -65,9 +65,10 @@ Route::prefix('users')->group(function () {
     // Update profile picture
     Route::post('{userId}/profile-picture', [UserController::class, 'updateProfilePicture']);
 
-    // Login dengan Google
-    Route::post('{userId}/google-login', [UserController::class, 'loginWithGoogle']);
 });
+
+// Pindahkan rute google-login ke luar grup users
+Route::post('/google-login', [UserController::class, 'loginWithGoogle']);
 
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
