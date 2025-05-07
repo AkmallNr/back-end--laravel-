@@ -13,6 +13,8 @@ use App\Http\Resources\GroupResource;
 use App\Http\Resources\ProjectResource;
 use App\Http\Resources\TaskResource;
 use App\Http\Resources\QuoteResource;
+use App\Http\Resources\ScheduleResource;
+use App\Models\Schedule;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Hash;
@@ -21,6 +23,7 @@ use Illuminate\Support\Facades\Storage;
 use Kreait\Firebase\Factory;
 use Illuminate\Support\Str;
 use Kreait\Firebase\Auth as FirebaseAuth;
+
 
 class UserController extends Controller
 {
@@ -80,6 +83,17 @@ class UserController extends Controller
         return QuoteResource::collection($quotes);
     }
 
+    public function getSchedule($userId)
+    {
+        $user = User::find($userId);
+        if (!$user) {
+            return response()->json(['message' => 'User not found'], Response::HTTP_NOT_FOUND);
+        }
+
+        $schedule = $user->schedule;
+        return ScheduleResource::collection($schedule);
+    }
+
     // 🔹 Menambahkan quote
     public function addQuote(Request $request, $userId)
     {
@@ -104,6 +118,21 @@ class UserController extends Controller
 
         return new QuoteResource($quote);
     }
+
+
+    public function addSchedule(Request $request, $userId)
+    {
+        $user = User::find($userId);
+        if (!$user) {
+            return response()->json(['message' => 'User not found'], Response::HTTP_NOT_FOUND);
+        }
+
+        $schedule = new Schedule($request->all());
+        $user->schedule()->save($schedule);
+
+        return new ScheduleResource($schedule);
+    }
+
 
     // 🔹 Update quote
     public function updateQuote(Request $request, $userId, $quoteId)
@@ -134,6 +163,23 @@ class UserController extends Controller
         return new QuoteResource($quote);
     }
 
+    public function updateSchedule(Request $request, $userId, $scheduleId)
+    {
+        $user = User::find($userId);
+        if (!$user) {
+            return response()->json(['message' => 'User not found'], Response::HTTP_NOT_FOUND);
+        }
+
+        $schedule = $user->schedule()->find($scheduleId);
+        if (!$schedule) {
+            return response()->json(['message' => 'Quote not found'], Response::HTTP_NOT_FOUND);
+        }
+
+
+        $schedule->update($request->all());
+        return new ScheduleResource($schedule);
+    }
+
     // 🔹 Menghapus quote
     public function deleteQuote($userId, $quoteId)
     {
@@ -148,6 +194,22 @@ class UserController extends Controller
         }
 
         $quote->delete();
+        return response()->json(['message' => 'Quote deleted'], Response::HTTP_OK);
+    }
+
+    public function deleteSchedule($userId, $scheduleId)
+    {
+        $user = User::find($userId);
+        if (!$user) {
+            return response()->json(['message' => 'User not found'], Response::HTTP_NOT_FOUND);
+        }
+
+        $schedule = $user->schedule()->find($scheduleId);
+        if (!$schedule) {
+            return response()->json(['message' => 'Quote not found'], Response::HTTP_NOT_FOUND);
+        }
+
+        $schedule->delete();
         return response()->json(['message' => 'Quote deleted'], Response::HTTP_OK);
     }
 

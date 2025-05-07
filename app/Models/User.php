@@ -39,6 +39,11 @@ class User extends Authenticatable
         return $this->hasMany(Quote::class, 'userId');
     }
 
+    public function schedule(): HasMany
+    {
+        return $this->hasMany(Schedule::class, 'userId');
+    }
+
     public function setPasswordAttribute($value)
     {
         $this->attributes['password'] = Hash::make($value);

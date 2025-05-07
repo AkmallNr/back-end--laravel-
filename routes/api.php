@@ -62,6 +62,18 @@ Route::prefix('users')->group(function () {
     // Delete quote
     Route::delete('{userId}/quotes/{quoteId}', [UserController::class, 'deleteQuote']);
 
+    // Get schedule
+    Route::get('{userId}/schedules', [UserController::class, 'getSchedule']);
+
+    // Add schedule
+    Route::post('{userId}/schedules', [UserController::class, 'addSchedule']);
+
+    // Update schedule
+    Route::put('{userId}/schedules/{scheduleId}', [UserController::class, 'updateSchedule']);
+
+    // Delete schedule
+    Route::delete('{userId}/schedules/{scheduleId}', [UserController::class, 'deleteSchedule']);
+
     // Update profile picture
     Route::post('{userId}/profile-picture', [UserController::class, 'updateProfilePicture']);
 
