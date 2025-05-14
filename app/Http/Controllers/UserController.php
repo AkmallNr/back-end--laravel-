@@ -71,6 +71,27 @@ class UserController extends Controller
         return ProjectResource::collection($projects);
     }
 
+    public function getTaskByUser($userId)
+    {
+        // Cari user berdasarkan userId dengan eager loading relasi groups, projects, dan tasks
+        $user = User::with('groups.projects.tasks')->find($userId);
+
+        // Cek apakah user ditemukan
+        if (!$user) {
+            return response()->json(['message' => 'User not found'], Response::HTTP_NOT_FOUND);
+        }
+
+        // Ambil semua tasks dari proyek-proyek di semua grup
+        $tasks = $user->groups->flatMap(function ($group) {
+            return $group->projects->flatMap(function ($project) {
+                return $project->tasks;
+            });
+        });
+
+        // Kembalikan koleksi tasks sebagai TaskResource
+        return TaskResource::collection($tasks);
+    }
+
     // 🔹 Mendapatkan semua quotes berdasarkan userId
     public function getQuotes($userId)
     {

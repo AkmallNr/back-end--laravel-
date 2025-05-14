@@ -18,6 +18,7 @@ return new class extends Migration
             $table->dateTime('startDate')->nullable();  // Menggunakan datetime untuk menyimpan tanggal dan jam
             $table->dateTime('endDate')->nullable();    // Menggunakan datetime untuk menyimpan tanggal dan jam
             $table->foreignId('groupId')->constrained('groups')->onDelete('cascade');
+            // $table->foreignId('userId')->constrained('users')->onDelete('cascade');
             $table->timestamps();
         });
     }
