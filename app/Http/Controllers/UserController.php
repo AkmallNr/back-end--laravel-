@@ -404,17 +404,29 @@ class UserController extends Controller
         return new TaskResource($task);
     }
 
-    // 🔹 Update Project
-    public function updateProject(Request $request, $userId, $groupId, $projectId)
-    {
-        $project = Project::find($projectId);
-        if (!$project || $project->group->id != $groupId || $project->group->user->id != $userId) {
-            return response()->json(['message' => 'Forbidden'], Response::HTTP_FORBIDDEN);
-        }
-
-        $project->update($request->all());
-        return new ProjectResource($project);
+public function updateProject(Request $request, $userId, $groupId, $projectId)
+{
+    $project = Project::find($projectId);
+    if (!$project || $project->group->user->id != $userId) {
+        Log::info("Validation failed: project=$project, userId=$userId, groupUserId=" . ($project->group->user->id ?? 'null'));
+        return response()->json(['message' => 'Forbidden'], Response::HTTP_FORBIDDEN);
     }
+
+    if ($request->has('groupId')) {
+        $newGroupId = $request->input('groupId');
+        $newGroup = \App\Models\Group::find($newGroupId);
+        if (!$newGroup || $newGroup->user->id != $userId) {
+            Log::info("New group validation failed: newGroupId=$newGroupId, userId=$userId, newGroupUserId=" . ($newGroup->user->id ?? 'null'));
+            return response()->json(['message' => 'Forbidden: You do not have access to the new group'], Response::HTTP_FORBIDDEN);
+        }
+        $project->groupId = $newGroupId;
+    }
+
+    $project->update($request->only(['name', 'description', 'startDate', 'endDate']));
+    $project->save();
+
+    return new ProjectResource($project);
+}
 
     // 🔹 Register user baru
     public function register(Request $request)
@@ -521,9 +533,8 @@ class UserController extends Controller
         ], Response::HTTP_BAD_REQUEST);
     }
 
-    // 🔹 Login dengan Google (tanpa userId)
     public function loginWithGoogle(Request $request)
-    {
+{
     // Validasi input
     $validator = Validator::make($request->all(), [
         'token' => 'required|string',
@@ -557,23 +568,31 @@ class UserController extends Controller
             'picture' => $picture,
         ]);
 
-        // Cari atau buat pengguna di database
-        $user = User::firstOrCreate(
-            ['google_id' => $uid],
-            [
+        // Cari pengguna berdasarkan google_id
+        $existingUser = User::where('google_id', $uid)->first();
+
+        if ($existingUser) {
+            // Jika pengguna sudah ada, perbarui data kecuali foto profil jika sudah ada
+            $updateData = [
+                'name' => $name,
+                'email' => $email,
+            ];
+
+            // Hanya update foto profil jika pengguna belum memiliki foto profil
+            if (empty($existingUser->profile_picture) && $picture) {
+                $updateData['profile_picture'] = basename($picture);
+            }
+
+            $existingUser->update($updateData);
+            $user = $existingUser;
+        } else {
+            // Jika pengguna belum ada, buat pengguna baru
+            $user = User::create([
+                'google_id' => $uid,
                 'name' => $name,
                 'email' => $email,
                 'password' => Hash::make(\Illuminate\Support\Str::random(16)),
                 'profile_picture' => $picture ? basename($picture) : null,
-            ]
-        );
-
-        // Perbarui data pengguna jika sudah ada
-        if (!$user->wasRecentlyCreated) {
-            $user->update([
-                'name' => $name,
-                'email' => $email,
-                'profile_picture' => $picture ? basename($picture) : $user->profile_picture,
             ]);
         }
 
@@ -583,6 +602,7 @@ class UserController extends Controller
             'name' => $user->name,
             'email' => $user->email,
             'google_id' => $user->google_id,
+            'profile_picture' => $user->profile_picture,
         ]);
 
         // Kembalikan respons dengan data pengguna
