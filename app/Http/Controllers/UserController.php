@@ -154,6 +154,34 @@ class UserController extends Controller
         return new ScheduleResource($schedule);
     }
 
+    // 🔹 Memperbarui Group berdasarkan userId dan groupId
+    public function updateGroup(Request $request, $userId, $groupId)
+    {
+        $user = User::find($userId);
+        if (!$user) {
+            return response()->json(['message' => 'User not found'], Response::HTTP_NOT_FOUND);
+        }
+
+        $group = $user->groups()->find($groupId);
+        if (!$group) {
+            return response()->json(['message' => 'Group not found'], Response::HTTP_NOT_FOUND);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'name' => 'sometimes|required|string|max:255',
+            'icon' => 'sometimes|required|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        $group->update($request->only(['name', 'icon']));
+        return new GroupResource($group);
+    }
 
     // 🔹 Update quote
     public function updateQuote(Request $request, $userId, $quoteId)
