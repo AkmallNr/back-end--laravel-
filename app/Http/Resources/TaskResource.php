@@ -18,8 +18,10 @@ class TaskResource extends JsonResource
             'reminder' => $this->reminder,
             'priority' => $this->priority,
             'status' => $this->status,
-            'quoteid' => $this->quoteId,
-            'attachments' => AttachmentResource::collection($this->attachments),
+            'quoteId' => $this->quoteId,
+            'attachment' => $this->whenLoaded('attachments', function () {
+                return $this->attachments->pluck('file_url')->toArray(); // Kembalikan daftar file_url
+            }),
         ];
     }
 }

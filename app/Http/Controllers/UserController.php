@@ -8,6 +8,7 @@ use App\Models\Group;
 use App\Models\Project;
 use App\Models\Task;
 use App\Models\Quote;
+use App\Models\Attachment;
 use App\Http\Resources\UserResource;
 use App\Http\Resources\GroupResource;
 use App\Http\Resources\ProjectResource;
@@ -240,16 +241,50 @@ class UserController extends Controller
         }
 
         Log::info('Project Group ID: ' . $project->group->id);
-        Log::info('Project ID: ' . $groupId);
-        Log::info('Project User ID: ' . $userId);
+        Log::info('Group ID: ' . $groupId);
+        Log::info('User ID: ' . $userId);
         Log::info('Project Group User ID: ' . $project->group->user->id);
 
         if ($project->group->id != $groupId || $project->group->user->id != $userId) {
             return response()->json(['message' => 'Forbidden'], Response::HTTP_FORBIDDEN);
         }
 
-        $tasks = $project->tasks;
-        return TaskResource::collection($tasks);
+        $tasks = $project->tasks()->with('attachments')->get();
+        return response()->json([
+            'data' => TaskResource::collection($tasks)
+        ], Response::HTTP_OK);
+    }
+
+    public function getTaskById($userId, $groupId, $projectId, $taskId)
+    {
+        $project = Project::find($projectId);
+
+        if (!$project) {
+            return response()->json(['message' => 'Project not found'], Response::HTTP_NOT_FOUND);
+        }
+
+        Log::info('Project Group ID: ' . $project->group->id);
+        Log::info('Group ID: ' . $groupId);
+        Log::info('User ID: ' . $userId);
+        Log::info('Project Group User ID: ' . $project->group->user->id);
+
+        if ($project->group->id != $groupId || $project->group->user->id != $userId) {
+            return response()->json(['message' => 'Forbidden'], Response::HTTP_FORBIDDEN);
+        }
+
+        try {
+            $task = Task::where('id', $taskId)
+                ->where('projectId', $projectId) // Perhatikan 'project_id', bukan 'projectId'
+                ->with('attachments')
+                ->firstOrFail();
+
+            return response()->json([
+                'data' => [new TaskResource($task)] // Wrap dalam array untuk konsistensi
+            ], Response::HTTP_OK);
+        } catch (\Exception $e) {
+            Log::error("Gagal memuat tugas: {$e->getMessage()}", ['exception' => $e]);
+            return response()->json(['error' => 'Gagal memuat tugas'], Response::HTTP_NOT_FOUND);
+        }
     }
 
     // 🔹 Membuat user baru
@@ -306,6 +341,27 @@ class UserController extends Controller
     // 🔹 Menambahkan Task ke Project
     public function addTaskToProject(Request $request, $userId, $groupId, $projectId)
     {
+        // Validasi input
+        $validator = Validator::make($request->all(), [
+            'name' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'deadline' => 'nullable|date',
+            'reminder' => 'nullable|date',
+            'priority' => 'required|in:Rendah,Normal,Tinggi',
+            'attachment' => 'nullable|array',
+            'attachment.*' => 'string', // URL file atau link
+            'status' => 'boolean',
+            'quote_id' => 'nullable|exists:quotes,id',
+        ]);
+
+        if ($validator->fails()) {
+            Log::error('Validation failed:', $validator->errors()->toArray());
+            return response()->json([
+                'message' => $validator->errors()->first(),
+            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        // Verifikasi project, group, dan user
         $project = Project::with('group.user')->find($projectId);
 
         Log::info('Project and group information:', [
@@ -324,10 +380,32 @@ class UserController extends Controller
             return response()->json(['message' => 'Forbidden'], Response::HTTP_FORBIDDEN);
         }
 
-        $task = new Task($request->all());
+        // Buat task
+        $task = new Task([
+            'project_id' => $projectId,
+            'name' => $request->name,
+            'description' => $request->description,
+            'deadline' => $request->deadline,
+            'reminder' => $request->reminder,
+            'priority' => $request->priority,
+            'status' => $request->status ?? false,
+            'quote_id' => $request->quote_id,
+        ]);
         $project->tasks()->save($task);
 
-        return new TaskResource($task);
+        // Simpan attachment jika ada
+        if ($request->has('attachment') && is_array($request->attachment)) {
+            foreach ($request->attachment as $attachmentUrl) {
+                Attachment::create([
+                    'taskId' => $task->id,
+                    'file_name' => basename($attachmentUrl), // Ambil nama file dari URL
+                    'file_url' => $attachmentUrl,
+                ]);
+            }
+        }
+
+        // Kembalikan task dengan relasi attachments
+        return new TaskResource($task->load('attachments'));
     }
 
     // 🔹 Menghapus Group
@@ -373,15 +451,74 @@ class UserController extends Controller
 
     // 🔹 Update Task
     public function updateTask(Request $request, $userId, $groupId, $projectId, $taskId)
-    {
-        $task = Task::find($taskId);
-        if (!$task || $task->project->id != $projectId || $task->project->group->id != $groupId || $task->project->group->user->id != $userId) {
-            return response()->json(['message' => 'Forbidden'], Response::HTTP_FORBIDDEN);
-        }
+{
+    // Validasi input
+    $validator = Validator::make($request->all(), [
+        'name' => 'required|string|max:255',
+        'description' => 'nullable|string',
+        'deadline' => 'nullable|date',
+        'reminder' => 'nullable|date',
+        'priority' => 'required|in:Rendah,Normal,Tinggi',
+        'attachment' => 'nullable|array',
+        'attachment.*' => 'string',
+        'status' => 'boolean',
+        'quote_id' => 'nullable|exists:quotes,id',
+    ]);
 
-        $task->update($request->all());
-        return new TaskResource($task);
+    if ($validator->fails()) {
+        Log::error('Validation failed:', $validator->errors()->toArray());
+        return response()->json([
+            'message' => $validator->errors()->first(),
+        ], Response::HTTP_UNPROCESSABLE_ENTITY);
     }
+
+    // Verifikasi task, project, group, dan user
+    $task = Task::where('id', $taskId)
+        ->whereHas('project', function ($query) use ($userId, $projectId, $groupId) {
+            $query->where('id', $projectId)
+                ->whereHas('group', function ($q) use ($userId, $groupId) {
+                    $q->where('id', $groupId)
+                        ->where('userId', $userId);
+                });
+        })
+        ->first();
+
+    if (!$task) {
+        Log::info('Forbidden Access:', [
+            'taskId' => $taskId,
+            'projectId' => $projectId,
+            'groupId' => $groupId,
+            'userId' => $userId,
+        ]);
+        return response()->json(['message' => 'Forbidden'], Response::HTTP_FORBIDDEN);
+    }
+
+    // Update task
+    $task->update([
+        'name' => $request->name,
+        'description' => $request->description,
+        'deadline' => $request->deadline,
+        'reminder' => $request->reminder,
+        'priority' => $request->priority,
+        'status' => $request->status ?? $task->status,
+        'quote_id' => $request->quote_id,
+    ]);
+
+    // Hapus attachment lama dan simpan yang baru jika ada
+    if ($request->has('attachment') && is_array($request->attachment)) {
+        $task->attachments()->delete(); // Hapus attachment lama
+        foreach ($request->attachment as $attachmentUrl) {
+            Attachment::create([
+                'taskId' => $task->id,
+                'file_name' => basename($attachmentUrl),
+                'file_url' => $attachmentUrl,
+            ]);
+        }
+    }
+
+    // Kembalikan task dengan relasi attachments
+    return new TaskResource($task->load('attachments'));
+}
 
     // 🔹 Update Project
     public function updateProject(Request $request, $userId, $groupId, $projectId)
@@ -572,7 +709,46 @@ class UserController extends Controller
             'message' => 'Login gagal: ' . $e->getMessage(),
         ], Response::HTTP_UNAUTHORIZED);
     }
-}
+    }
+
+    public function upload(Request $request)
+    {
+        try {
+            $request->validate([
+                'file' => 'nullable|file|mimes:jpeg,png,pdf|max:10240', // Maks 10MB
+                'link' => 'nullable|url',
+            ]);
+
+            $response = [];
+
+            // Jika ada file yang diunggah
+            if ($request->hasFile('file')) {
+                $file = $request->file('file');
+                $fileName = Str::random(10) . '_' . time() . '.' . $file->getClientOriginalExtension();
+                $path = $file->storeAs('uploads', $fileName, 'public'); // Simpan di storage/public/uploads
+                $fileUrl = Storage::url($path);
+
+                $response['file_url'] = url($fileUrl);
+                $response['file_name'] = $file->getClientOriginalName();
+            }
+
+            // Jika ada link
+            if ($request->has('link')) {
+                $response['link'] = $request->input('link');
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => $response,
+                'message' => 'File atau link berhasil diunggah'
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengunggah file: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }
 
 

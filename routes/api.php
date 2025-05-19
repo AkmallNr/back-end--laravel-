@@ -20,6 +20,9 @@ Route::prefix('users')->group(function () {
     // Mendapatkan tugas berdasarkan projectId
     Route::get('{userId}/groups/{groupId}/projects/{projectId}/tasks', [UserController::class, 'getTasks']);
 
+    // Mendapatkan tugas berdasarkan taskId
+    Route::get('{userId}/groups/{groupId}/projects/{projectId}/tasks/{taskId}', [UserController::class, 'getTaskById']);
+
     // Membuat user baru
     Route::post('/', [UserController::class, 'createUser']);
 
@@ -77,7 +80,10 @@ Route::prefix('users')->group(function () {
     // Update profile picture
     Route::post('{userId}/profile-picture', [UserController::class, 'updateProfilePicture']);
 
+
 });
+
+Route::post('/upload-file', [UserController::class, 'upload']);
 
 // Pindahkan rute google-login ke luar grup users
 Route::post('/google-login', [UserController::class, 'loginWithGoogle']);
