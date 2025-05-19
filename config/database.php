@@ -92,6 +92,13 @@ return [
             'prefix_indexes' => true,
             'search_path' => 'public',
             'sslmode' => 'prefer',
+            'options' => [
+            PDO::ATTR_EMULATE_PREPARES => false,
+            PDO::ATTR_DEFAULT_STR_PARAM => PDO::PARAM_STR,
+            'init_commands' => [
+                "SET TIME ZONE 'Asia/Jakarta';"
+                ]
+            ],
         ],
 
         'sqlsrv' => [

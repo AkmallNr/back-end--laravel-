@@ -13,7 +13,7 @@ class Project extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['name', 'description', 'startDate', 'endDate', 'groupId'];
+    protected $fillable = ['name', 'description', 'startDate', 'endDate', 'groupId', 'userId'];
 
     // Relasi ke Group (Many to One)
     public function group(): BelongsTo

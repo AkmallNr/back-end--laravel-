@@ -14,6 +14,8 @@ Route::prefix('users')->group(function () {
     // Mendapatkan proyek berdasarkan userId
     Route::get('{userId}/projects', [UserController::class, 'getProjectsByUser']);
 
+    Route::get('{userId}/tasks', [UserController::class, 'getTaskByUser']);
+
     // Mendapatkan proyek berdasarkan groupId
     Route::get('{userId}/groups/{groupId}/projects', [UserController::class, 'getProjectsByGroup']);
 
@@ -80,6 +82,7 @@ Route::prefix('users')->group(function () {
     // Update profile picture
     Route::post('{userId}/profile-picture', [UserController::class, 'updateProfilePicture']);
 
+    Route::put('/users/{userId}/groups/{groupId}', [UserController::class, 'updateGroup']);
 
 });
 

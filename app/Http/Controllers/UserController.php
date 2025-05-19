@@ -72,6 +72,27 @@ class UserController extends Controller
         return ProjectResource::collection($projects);
     }
 
+    public function getTaskByUser($userId)
+    {
+        // Cari user berdasarkan userId dengan eager loading relasi groups, projects, dan tasks
+        $user = User::with('groups.projects.tasks')->find($userId);
+
+        // Cek apakah user ditemukan
+        if (!$user) {
+            return response()->json(['message' => 'User not found'], Response::HTTP_NOT_FOUND);
+        }
+
+        // Ambil semua tasks dari proyek-proyek di semua grup
+        $tasks = $user->groups->flatMap(function ($group) {
+            return $group->projects->flatMap(function ($project) {
+                return $project->tasks;
+            });
+        });
+
+        // Kembalikan koleksi tasks sebagai TaskResource
+        return TaskResource::collection($tasks);
+    }
+
     // 🔹 Mendapatkan semua quotes berdasarkan userId
     public function getQuotes($userId)
     {
@@ -134,6 +155,34 @@ class UserController extends Controller
         return new ScheduleResource($schedule);
     }
 
+    // 🔹 Memperbarui Group berdasarkan userId dan groupId
+    public function updateGroup(Request $request, $userId, $groupId)
+    {
+        $user = User::find($userId);
+        if (!$user) {
+            return response()->json(['message' => 'User not found'], Response::HTTP_NOT_FOUND);
+        }
+
+        $group = $user->groups()->find($groupId);
+        if (!$group) {
+            return response()->json(['message' => 'Group not found'], Response::HTTP_NOT_FOUND);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'name' => 'sometimes|required|string|max:255',
+            'icon' => 'sometimes|required|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        $group->update($request->only(['name', 'icon']));
+        return new GroupResource($group);
+    }
 
     // 🔹 Update quote
     public function updateQuote(Request $request, $userId, $quoteId)
@@ -528,9 +577,21 @@ class UserController extends Controller
             return response()->json(['message' => 'Forbidden'], Response::HTTP_FORBIDDEN);
         }
 
-        $project->update($request->all());
-        return new ProjectResource($project);
+    if ($request->has('groupId')) {
+        $newGroupId = $request->input('groupId');
+        $newGroup = \App\Models\Group::find($newGroupId);
+        if (!$newGroup || $newGroup->user->id != $userId) {
+            Log::info("New group validation failed: newGroupId=$newGroupId, userId=$userId, newGroupUserId=" . ($newGroup->user->id ?? 'null'));
+            return response()->json(['message' => 'Forbidden: You do not have access to the new group'], Response::HTTP_FORBIDDEN);
+        }
+        $project->groupId = $newGroupId;
     }
+
+    $project->update($request->only(['name', 'description', 'startDate', 'endDate']));
+    $project->save();
+
+    return new ProjectResource($project);
+}
 
     // 🔹 Register user baru
     public function register(Request $request)
@@ -637,9 +698,8 @@ class UserController extends Controller
         ], Response::HTTP_BAD_REQUEST);
     }
 
-    // 🔹 Login dengan Google (tanpa userId)
     public function loginWithGoogle(Request $request)
-    {
+{
     // Validasi input
     $validator = Validator::make($request->all(), [
         'token' => 'required|string',
@@ -673,23 +733,31 @@ class UserController extends Controller
             'picture' => $picture,
         ]);
 
-        // Cari atau buat pengguna di database
-        $user = User::firstOrCreate(
-            ['google_id' => $uid],
-            [
+        // Cari pengguna berdasarkan google_id
+        $existingUser = User::where('google_id', $uid)->first();
+
+        if ($existingUser) {
+            // Jika pengguna sudah ada, perbarui data kecuali foto profil jika sudah ada
+            $updateData = [
+                'name' => $name,
+                'email' => $email,
+            ];
+
+            // Hanya update foto profil jika pengguna belum memiliki foto profil
+            if (empty($existingUser->profile_picture) && $picture) {
+                $updateData['profile_picture'] = basename($picture);
+            }
+
+            $existingUser->update($updateData);
+            $user = $existingUser;
+        } else {
+            // Jika pengguna belum ada, buat pengguna baru
+            $user = User::create([
+                'google_id' => $uid,
                 'name' => $name,
                 'email' => $email,
                 'password' => Hash::make(\Illuminate\Support\Str::random(16)),
                 'profile_picture' => $picture ? basename($picture) : null,
-            ]
-        );
-
-        // Perbarui data pengguna jika sudah ada
-        if (!$user->wasRecentlyCreated) {
-            $user->update([
-                'name' => $name,
-                'email' => $email,
-                'profile_picture' => $picture ? basename($picture) : $user->profile_picture,
             ]);
         }
 
@@ -699,6 +767,7 @@ class UserController extends Controller
             'name' => $user->name,
             'email' => $user->email,
             'google_id' => $user->google_id,
+            'profile_picture' => $user->profile_picture,
         ]);
 
         // Kembalikan respons dengan data pengguna
