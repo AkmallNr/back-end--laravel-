@@ -79,6 +79,8 @@ Route::prefix('users')->group(function () {
     // Update profile picture
     Route::post('{userId}/profile-picture', [UserController::class, 'updateProfilePicture']);
 
+    Route::put('/users/{userId}/groups/{groupId}', [UserController::class, 'updateGroup']);
+
 });
 
 // Pindahkan rute google-login ke luar grup users
