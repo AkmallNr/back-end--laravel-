@@ -87,9 +87,6 @@ Route::prefix('users')->group(function () {
     Route::post('{userId}/profile-picture', [UserController::class, 'updateProfilePicture']);
 
     Route::put('{userId}/groups/{groupId}', [UserController::class, 'updateGroup']);
-
-
-
 });
 
 Route::post('/upload-file', [UserController::class, 'upload']);
