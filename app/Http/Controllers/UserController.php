@@ -23,6 +23,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
 use Kreait\Firebase\Factory;
 use Illuminate\Support\Str;
+use Carbon\Carbon;
 use Kreait\Firebase\Auth as FirebaseAuth;
 
 
@@ -431,7 +432,7 @@ class UserController extends Controller
 
         // Buat task
         $task = new Task([
-            'project_id' => $projectId,
+            'projectId' => $projectId,
             'name' => $request->name,
             'description' => $request->description,
             'deadline' => $request->deadline,
@@ -499,99 +500,74 @@ class UserController extends Controller
     }
 
     // 🔹 Update Task
-    public function updateTask(Request $request, $userId, $groupId, $projectId, $taskId)
-{
-    // Validasi input
-    $validator = Validator::make($request->all(), [
-        'name' => 'required|string|max:255',
-        'description' => 'nullable|string',
-        'deadline' => 'nullable|date',
-        'reminder' => 'nullable|date',
-        'priority' => 'required|in:Rendah,Normal,Tinggi',
-        'attachment' => 'nullable|array',
-        'attachment.*' => 'string',
-        'status' => 'boolean',
-        'quote_id' => 'nullable|exists:quotes,id',
-    ]);
-
-    if ($validator->fails()) {
-        Log::error('Validation failed:', $validator->errors()->toArray());
-        return response()->json([
-            'message' => $validator->errors()->first(),
-        ], Response::HTTP_UNPROCESSABLE_ENTITY);
-    }
-
-    // Verifikasi task, project, group, dan user
-    $task = Task::where('id', $taskId)
-        ->whereHas('project', function ($query) use ($userId, $projectId, $groupId) {
-            $query->where('id', $projectId)
-                ->whereHas('group', function ($q) use ($userId, $groupId) {
-                    $q->where('id', $groupId)
-                        ->where('userId', $userId);
-                });
-        })
-        ->first();
-
-    if (!$task) {
-        Log::info('Forbidden Access:', [
-            'taskId' => $taskId,
-            'projectId' => $projectId,
-            'groupId' => $groupId,
-            'userId' => $userId,
-        ]);
-        return response()->json(['message' => 'Forbidden'], Response::HTTP_FORBIDDEN);
-    }
-
-    // Update task
-    $task->update([
-        'name' => $request->name,
-        'description' => $request->description,
-        'deadline' => $request->deadline,
-        'reminder' => $request->reminder,
-        'priority' => $request->priority,
-        'status' => $request->status ?? $task->status,
-        'quote_id' => $request->quote_id,
-    ]);
-
-    // Hapus attachment lama dan simpan yang baru jika ada
-    if ($request->has('attachment') && is_array($request->attachment)) {
-        $task->attachments()->delete(); // Hapus attachment lama
-        foreach ($request->attachment as $attachmentUrl) {
-            Attachment::create([
-                'taskId' => $task->id,
-                'file_name' => basename($attachmentUrl),
-                'file_url' => $attachmentUrl,
-            ]);
-        }
-    }
-
-    // Kembalikan task dengan relasi attachments
-    return new TaskResource($task->load('attachments'));
-}
-
-    // 🔹 Update Project
-    public function updateProject(Request $request, $userId, $groupId, $projectId)
+    public function updateTask($userId, $groupId, $projectId, $taskId, \Illuminate\Http\Request $request)
     {
         $project = Project::find($projectId);
-        if (!$project || $project->group->id != $groupId || $project->group->user->id != $userId) {
+
+        if (!$project) {
+            return response()->json(['message' => 'Project not found'], Response::HTTP_NOT_FOUND);
+        }
+
+        if ($project->group->id != $groupId || $project->group->user->id != $userId) {
             return response()->json(['message' => 'Forbidden'], Response::HTTP_FORBIDDEN);
         }
 
-    if ($request->has('groupId')) {
-        $newGroupId = $request->input('groupId');
-        $newGroup = \App\Models\Group::find($newGroupId);
-        if (!$newGroup || $newGroup->user->id != $userId) {
-            Log::info("New group validation failed: newGroupId=$newGroupId, userId=$userId, newGroupUserId=" . ($newGroup->user->id ?? 'null'));
-            return response()->json(['message' => 'Forbidden: You do not have access to the new group'], Response::HTTP_FORBIDDEN);
+        try {
+            $task = Task::where('id', $taskId)
+                ->where('projectId', $projectId)
+                ->firstOrFail();
+
+            $task->update([
+                'name' => $request->name,
+                'description' => $request->description,
+                'deadline' => $request->deadline,
+                'reminder' => $request->reminder,
+                'priority' => $request->priority,
+                'status' => $request->status ?? $task->status,
+                'quote_id' => $request->quoteId,
+                // completed_at diatur otomatis oleh model
+            ]);
+
+            // Handle attachments if needed
+            if ($request->has('attachment')) {
+                foreach ($request->attachment as $url) {
+                    $task->attachments()->create([
+                        'file_url' => $url,
+                        'file_name' => basename($url),
+                    ]);
+                }
+            }
+
+            return new TaskResource($task->load('attachments'));
+        } catch (\Exception $e) {
+            Log::error("Gagal memperbarui tugas: {$e->getMessage()}", ['exception' => $e]);
+            return response()->json(['error' => 'Gagal memperbarui tugas'], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
-        $project->groupId = $newGroupId;
     }
 
-    $project->update($request->only(['name', 'description', 'startDate', 'endDate']));
-    $project->save();
+        // 🔹 Update Project
+        public function updateProject(Request $request, $userId, $groupId, $projectId)
+        {
+            $project = Project::find($projectId);
+            if (!$project || $project->group->id != $groupId || $project->group->user->id != $userId) {
+                return response()->json(['message' => 'Forbidden'], Response::HTTP_FORBIDDEN);
+            }
 
-    return new ProjectResource($project);
-}
+        if ($request->has('groupId')) {
+            $newGroupId = $request->input('groupId');
+            $newGroup = \App\Models\Group::find($newGroupId);
+            if (!$newGroup || $newGroup->user->id != $userId) {
+                Log::info("New group validation failed: newGroupId=$newGroupId, userId=$userId, newGroupUserId=" . ($newGroup->user->id ?? 'null'));
+                return response()->json(['message' => 'Forbidden: You do not have access to the new group'], Response::HTTP_FORBIDDEN);
+            }
+            $project->groupId = $newGroupId;
+        }
+
+        $project->update($request->only(['name', 'description', 'startDate', 'endDate']));
+        $project->save();
+
+        return new ProjectResource($project);
+    }
 
     // 🔹 Register user baru
     public function register(Request $request)
@@ -816,6 +792,89 @@ class UserController extends Controller
                 'success' => false,
                 'message' => 'Gagal mengunggah file: ' . $e->getMessage()
             ], 500);
+        }
+    }
+
+    public function getCompletedTasksCountToday($userId, $groupId, $projectId)
+    {
+        $project = Project::find($projectId);
+
+        if (!$project) {
+            return response()->json(['message' => 'Project not found'], Response::HTTP_NOT_FOUND);
+        }
+
+        if ($project->group->id != $groupId || $project->group->user->id != $userId) {
+            return response()->json(['message' => 'Forbidden'], Response::HTTP_FORBIDDEN);
+        }
+
+        try {
+            $today = Carbon::today();
+            $count = Task::where('projectId', $projectId)
+                ->where('status', true)
+                ->whereDate('completed_at', $today)
+                ->count();
+
+            return response()->json([
+                'data' => [
+                    'completed_today' => $count
+                ]
+            ], Response::HTTP_OK);
+        } catch (\Exception $e) {
+            Log::error("Gagal menghitung tugas selesai: {$e->getMessage()}", ['exception' => $e]);
+            return response()->json(['error' => 'Gagal menghitung tugas selesai'], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    public function getWeeklyCompletedTasks(Request $request, $userId)
+    {
+        try {
+            // Ambil parameter week_start, default ke Senin minggu ini
+            $weekStartInput = $request->query('week_start');
+            $startOfWeek = $weekStartInput
+                ? Carbon::parse($weekStartInput)->startOfWeek(Carbon::MONDAY)
+                : Carbon::now()->startOfWeek(Carbon::MONDAY);
+            $endOfWeek = $startOfWeek->copy()->endOfWeek(Carbon::SUNDAY);
+
+            // Ambil tugas selesai untuk user dalam rentang mingguan
+            $tasks = Task::whereHas('project.group.user', function ($query) use ($userId) {
+                $query->where('id', $userId);
+            })
+                ->where('status', true)
+                ->whereBetween('completed_at', [$startOfWeek, $endOfWeek])
+                ->get();
+
+            // Inisialisasi hasil per hari
+            $result = [
+                'Monday' => 0,
+                'Tuesday' => 0,
+                'Wednesday' => 0,
+                'Thursday' => 0,
+                'Friday' => 0,
+                'Saturday' => 0,
+                'Sunday' => 0,
+            ];
+
+            // Hitung tugas per hari
+            foreach ($tasks as $task) {
+                $day = Carbon::parse($task->completed_at)->dayName;
+                if (isset($result[$day])) {
+                    $result[$day]++;
+                }
+            }
+
+            // Format rentang tanggal
+            $dateRange = $startOfWeek->format('d') . ' - ' . $endOfWeek->format('d M');
+
+            return response()->json([
+                'data' => [
+                    'date_range' => $dateRange,
+                    'tasks' => $result,
+                    'week_start' => $startOfWeek->toDateString(), // Kembalikan week_start untuk frontend
+                ]
+            ], Response::HTTP_OK);
+        } catch (\Exception $e) {
+            Log::error("Gagal menghitung tugas selesai mingguan: {$e->getMessage()}", ['exception' => $e]);
+            return response()->json(['error' => 'Gagal menghitung tugas selesai'], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 }

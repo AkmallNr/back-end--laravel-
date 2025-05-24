@@ -22,6 +22,7 @@ class TaskResource extends JsonResource
             'attachment' => $this->whenLoaded('attachments', function () {
                 return $this->attachments->pluck('file_url')->toArray(); // Kembalikan daftar file_url
             }),
+            'completed_at' => $this->completed_at ? $this->completed_at->toDateTimeString() : null,
         ];
     }
 }

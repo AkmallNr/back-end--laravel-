@@ -19,6 +19,7 @@ return new class extends Migration
             $table->string('reminder')->nullable();
             $table->string('priority')->nullable();
             $table->boolean('status')->nullable();
+            $table->timestamp('completed_at')->nullable();
             $table->foreignId('quoteId')->nullable();
             $table->foreignId('projectId')->constrained('projects')->onDelete('cascade');
             $table->timestamps();
