@@ -573,9 +573,9 @@ class UserController extends Controller
     public function updateProject(Request $request, $userId, $groupId, $projectId)
     {
         $project = Project::find($projectId);
-        if (!$project || $project->group->id != $groupId || $project->group->user->id != $userId) {
-            return response()->json(['message' => 'Forbidden'], Response::HTTP_FORBIDDEN);
-        }
+        // if (!$project || $project->group->id != $groupId || $project->group->user->id != $userId) {
+        //     return response()->json(['message' => 'Forbidden'], Response::HTTP_FORBIDDEN);
+        // }
 
     if ($request->has('groupId')) {
         $newGroupId = $request->input('groupId');
@@ -821,5 +821,3 @@ class UserController extends Controller
 }
 
 
-
-//tes
