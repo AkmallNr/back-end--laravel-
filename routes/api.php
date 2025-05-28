@@ -19,6 +19,10 @@ Route::prefix('users')->group(function () {
     // Mendapatkan proyek berdasarkan groupId
     Route::get('{userId}/groups/{groupId}/projects', [UserController::class, 'getProjectsByGroup']);
 
+    Route::get('{userId}/tasks/weekly-completed', [UserController::class, 'getWeeklyCompletedTasks']);
+
+    Route::get('{userId}/groups/{groupId}/projects/{projectId}/tasks/completed-today', [UserController::class, 'getCompletedTasksCountToday']);
+
     // Mendapatkan tugas berdasarkan projectId
     Route::get('{userId}/groups/{groupId}/projects/{projectId}/tasks', [UserController::class, 'getTasks']);
 
