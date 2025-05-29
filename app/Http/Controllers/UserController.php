@@ -794,6 +794,25 @@ class UserController extends Controller
             ], 500);
         }
     }
+
+    public function getTaskByProject($userId, $groupId, $projectId)
+    {
+        // Validasi bahwa project ada dan sesuai dengan user serta group
+        $project = Project::where('id', $projectId)
+            ->where('group_id', $groupId)
+            ->whereHas('group', function ($query) use ($userId) {
+                $query->where('user_id', $userId);
+            })
+            ->firstOrFail();
+
+        // Ambil semua task yang terkait dengan project, dengan relasi attachments
+        $tasks = Task::with('attachments')
+            ->where('projectId', $projectId)
+            ->get();
+
+        // Kembalikan response dalam bentuk TaskResource
+        return TaskResource::collection($tasks);
+    }
 }
 
 

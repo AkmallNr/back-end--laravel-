@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
+use App\Models\User;
 use Illuminate\Http\Request;
 
 Route::prefix('users')->group(function () {
@@ -87,6 +88,8 @@ Route::prefix('users')->group(function () {
     Route::post('{userId}/profile-picture', [UserController::class, 'updateProfilePicture']);
 
     Route::put('{userId}/groups/{groupId}', [UserController::class, 'updateGroup']);
+
+    Route::get('{userId}/groups/{groupId}/projects/{projectId}/tasks'. [UserController::class, 'getTaskByProject']);
 });
 
 Route::post('/upload-file', [UserController::class, 'upload']);
