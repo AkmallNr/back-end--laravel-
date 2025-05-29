@@ -1,7 +1,5 @@
 <?php
 
-// app/Http/Resources/TaskResource.php
-
 namespace App\Http\Resources;
 
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -18,10 +16,18 @@ class TaskResource extends JsonResource
             'reminder' => $this->reminder,
             'priority' => $this->priority,
             'status' => $this->status,
-            'quoteId' => $this->quoteId,
+            'quoteId' => is_string($this->quoteId) || is_numeric($this->quoteId)
+                ? $this->quoteId
+                : (is_array($this->quoteId) ? $this->quoteId : json_decode($this->quoteId, true)),
             'attachment' => $this->whenLoaded('attachments', function () {
-                return $this->attachments->pluck('file_url')->toArray(); // Kembalikan daftar file_url
-            }),
+                return $this->attachments->map(function ($attachment) {
+                    return is_string($attachment->file_url)
+                        ? $attachment->file_url
+                        : (is_array($attachment->file_url)
+                            ? $attachment->file_url
+                            : json_decode($attachment->file_url, true));
+                })->toArray();
+            }, []),
             'completed_at' => $this->completed_at ? $this->completed_at->toDateTimeString() : null,
         ];
     }
