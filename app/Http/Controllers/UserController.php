@@ -799,9 +799,9 @@ class UserController extends Controller
     {
         // Validasi bahwa project ada dan sesuai dengan user serta group
         $project = Project::where('id', $projectId)
-            ->where('group_id', $groupId)
+            ->where('groupId', $groupId)
             ->whereHas('group', function ($query) use ($userId) {
-                $query->where('user_id', $userId);
+                $query->where('userId', $userId);
             })
             ->firstOrFail();
 
