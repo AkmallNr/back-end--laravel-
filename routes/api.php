@@ -89,7 +89,7 @@ Route::prefix('users')->group(function () {
 
     Route::put('{userId}/groups/{groupId}', [UserController::class, 'updateGroup']);
 
-    Route::get('{userId}/groups/{groupId}/projects/{projectId}/tasks'. [UserController::class, 'getTaskByProject']);
+    Route::get('{userId}/groups/{groupId}/projects/{projectId}/tasks', [UserController::class, 'getTaskByProject']);
 });
 
 Route::post('/upload-file', [UserController::class, 'upload']);
