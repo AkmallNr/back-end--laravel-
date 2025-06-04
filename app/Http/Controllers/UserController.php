@@ -813,6 +813,55 @@ class UserController extends Controller
         // Kembalikan response dalam bentuk TaskResource
         return TaskResource::collection($tasks);
     }
+
+    public function getWeeklyCompletedTasks($userId)
+    {
+        try {
+            // Tentukan awal dan akhir minggu (Senin hingga Minggu)
+            $startOfWeek = Carbon::now()->startOfWeek(Carbon::MONDAY);
+            $endOfWeek = Carbon::now()->endOfWeek(Carbon::SUNDAY);
+
+            // Ambil tugas selesai untuk user dalam rentang mingguan
+            $tasks = Task::whereHas('project.group.user', function ($query) use ($userId) {
+                $query->where('id', $userId);
+            })
+                ->where('status', true)
+                ->whereBetween('completed_at', [$startOfWeek, $endOfWeek])
+                ->get();
+
+            // Inisialisasi hasil per hari
+            $result = [
+                'Monday' => 0,
+                'Tuesday' => 0,
+                'Wednesday' => 0,
+                'Thursday' => 0,
+                'Friday' => 0,
+                'Saturday' => 0,
+                'Sunday' => 0,
+            ];
+
+            // Hitung tugas per hari
+            foreach ($tasks as $task) {
+                $day = Carbon::parse($task->completed_at)->dayName;
+                if (isset($result[$day])) {
+                    $result[$day]++;
+                }
+            }
+
+            // Format rentang tanggal
+            $dateRange = $startOfWeek->format('d') . ' - ' . $endOfWeek->format('d M');
+
+            return response()->json([
+                'data' => [
+                    'date_range' => $dateRange,
+                    'tasks' => $result,
+                ]
+            ], Response::HTTP_OK);
+        } catch (\Exception $e) {
+            Log::error("Gagal menghitung tugas selesai mingguan: {$e->getMessage()}", ['exception' => $e]);
+            return response()->json(['error' => 'Gagal menghitung tugas selesai'], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
 }
 
 
