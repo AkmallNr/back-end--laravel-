@@ -117,6 +117,57 @@ class UserController extends Controller
         return ScheduleResource::collection($schedule);
     }
 
+    public function getSchedulesByDateRange(Request $request)
+    {
+        try {
+            // Validasi input
+            $validated = $request->validate([
+                'userId' => 'required|integer',
+                'startDate' => 'required|date',
+                'endDate' => 'required|date|after_or_equal:startDate',
+            ]);
+
+            $userId = $validated['userId'];
+            $startDate = Carbon::parse($validated['startDate'])->startOfDay();
+            $endDate = Carbon::parse($validated['endDate'])->endOfDay();
+
+            Log::debug("Fetching schedules for userId: $userId, startDate: $startDate, endDate: $endDate");
+
+            // Query untuk mengambil jadwal
+            $schedules = Schedule::where('userId', $userId)
+                ->where(function ($query) use ($startDate, $endDate) {
+                    // Konversi startTime ke format tanggal untuk perbandingan
+                    $query->whereRaw("TO_DATE(SUBSTRING(\"startTime\", 1, 10), 'dd/MM/yyyy') >= ?", [$startDate])
+                          ->whereRaw("TO_DATE(SUBSTRING(\"endTime\", 1, 10), 'dd/MM/yyyy') <= ?", [$endDate]);
+                })
+                ->get();
+
+            if ($schedules->isEmpty()) {
+                return response()->json([
+                    'message' => 'No schedules found for the given date range.',
+                    'data' => []
+                ], 200);
+            }
+
+            return response()->json([
+                'message' => 'Schedules retrieved successfully.',
+                'data' => $schedules
+            ], 200);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'message' => 'Validation failed.',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error("Error fetching schedules: {$e->getMessage()}");
+            return response()->json([
+                'message' => 'An error occurred while fetching schedules.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
     // 🔹 Menambahkan quote
     public function addQuote(Request $request, $userId)
     {
@@ -813,6 +864,8 @@ class UserController extends Controller
         // Kembalikan response dalam bentuk TaskResource
         return TaskResource::collection($tasks);
     }
+
+
 }
 
 

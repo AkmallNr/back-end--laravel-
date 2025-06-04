@@ -75,6 +75,8 @@ Route::prefix('users')->group(function () {
     // Get schedule
     Route::get('{userId}/schedules', [UserController::class, 'getSchedule']);
 
+    Route::get('{userId}/range', [UserController::class, 'getSchedulesByDateRange']);
+
     // Add schedule
     Route::post('{userId}/schedules', [UserController::class, 'addSchedule']);
 
