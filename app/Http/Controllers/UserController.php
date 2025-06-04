@@ -122,10 +122,9 @@ class UserController extends Controller
         try {
             // Validasi input
             $validated = $request->validate([
-                'userId' => 'required|integer',
-                'startDate' => 'required|date',
-                'endDate' => 'required|date|after_or_equal:startDate',
-            ]);
+            'startDate' => 'required|date_format:d/m/Y',
+            'endDate' => 'required|date_format:d/m/Y|after_or_equal:startDate',
+        ]);
 
             $userId = $validated['userId'];
             $startDate = Carbon::parse($validated['startDate'])->startOfDay();
