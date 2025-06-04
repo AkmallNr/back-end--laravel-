@@ -129,8 +129,9 @@ class UserController extends Controller
                 'endDate' => 'required|date_format:d/m/Y|after_or_equal:startDate',
             ]);
 
-            $startDate = Carbon::parse($validated['startDate'])->startOfDay();
-            $endDate = Carbon::parse($validated['endDate'])->endOfDay();
+            // Parse tanggal menggunakan createFromFormat
+            $startDate = Carbon::createFromFormat('d/m/Y', $validated['startDate'])->startOfDay();
+            $endDate = Carbon::createFromFormat('d/m/Y', $validated['endDate'])->endOfDay();
 
             Log::debug("Fetching schedules for userId: $userId, startDate: $startDate, endDate: $endDate");
 
