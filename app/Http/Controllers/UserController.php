@@ -117,16 +117,18 @@ class UserController extends Controller
         return ScheduleResource::collection($schedule);
     }
 
-    public function getSchedulesByDateRange(Request $request)
+    public function getSchedulesByDateRange($userId, Request $request)
     {
         try {
+            // Log data yang diterima
+            Log::debug("Received request: userId=$userId, startDate={$request->input('startDate')}, endDate={$request->input('endDate')}");
+
             // Validasi input
             $validated = $request->validate([
-            'startDate' => 'required|date_format:d/m/Y',
-            'endDate' => 'required|date_format:d/m/Y|after_or_equal:startDate',
-        ]);
+                'startDate' => 'required|date_format:d/m/Y',
+                'endDate' => 'required|date_format:d/m/Y|after_or_equal:startDate',
+            ]);
 
-            $userId = $validated['userId'];
             $startDate = Carbon::parse($validated['startDate'])->startOfDay();
             $endDate = Carbon::parse($validated['endDate'])->endOfDay();
 
@@ -135,9 +137,8 @@ class UserController extends Controller
             // Query untuk mengambil jadwal
             $schedules = Schedule::where('userId', $userId)
                 ->where(function ($query) use ($startDate, $endDate) {
-                    // Konversi startTime ke format tanggal untuk perbandingan
-                    $query->whereRaw("TO_DATE(SUBSTRING(\"startTime\", 1, 10), 'dd/MM/yyyy') >= ?", [$startDate])
-                          ->whereRaw("TO_DATE(SUBSTRING(\"endTime\", 1, 10), 'dd/MM/yyyy') <= ?", [$endDate]);
+                    $query->whereRaw("TO_DATE(SUBSTRING(\"startTime\", 1, 10), 'DD/MM/YYYY') >= ?", [$startDate])
+                        ->whereRaw("TO_DATE(SUBSTRING(\"endTime\", 1, 10), 'DD/MM/YYYY') <= ?", [$endDate]);
                 })
                 ->get();
 
@@ -154,6 +155,7 @@ class UserController extends Controller
             ], 200);
 
         } catch (\Illuminate\Validation\ValidationException $e) {
+            Log::error("Validation failed: " . json_encode($e->errors()));
             return response()->json([
                 'message' => 'Validation failed.',
                 'errors' => $e->errors()
