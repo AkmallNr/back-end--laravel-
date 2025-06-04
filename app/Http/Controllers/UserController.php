@@ -725,7 +725,7 @@ class UserController extends Controller
         ], Response::HTTP_BAD_REQUEST);
     }
 
-    public function loginWithGoogle(Request $request)
+public function loginWithGoogle(Request $request)
 {
     // Validasi input
     $validator = Validator::make($request->all(), [
@@ -750,41 +750,34 @@ class UserController extends Controller
         $uid = $firebaseUser['sub'];
         $email = $firebaseUser['email'];
         $name = $firebaseUser['name'] ?? 'Unknown';
-        $picture = $firebaseUser['picture'] ?? null;
 
         // Log data dari Firebase
         Log::info('Firebase user data:', [
             'uid' => $uid,
             'email' => $email,
             'name' => $name,
-            'picture' => $picture,
         ]);
 
         // Cari pengguna berdasarkan google_id
         $existingUser = User::where('google_id', $uid)->first();
 
         if ($existingUser) {
-            // Jika pengguna sudah ada, perbarui data kecuali foto profil jika sudah ada
+            // Jika pengguna sudah ada, perbarui data kecuali profile_picture
             $updateData = [
                 'name' => $name,
                 'email' => $email,
             ];
 
-            // Hanya update foto profil jika pengguna belum memiliki foto profil
-            if (empty($existingUser->profile_picture) && $picture) {
-                $updateData['profile_picture'] = basename($picture);
-            }
-
             $existingUser->update($updateData);
             $user = $existingUser;
         } else {
-            // Jika pengguna belum ada, buat pengguna baru
+            // Jika pengguna belum ada, buat pengguna baru dengan profile_picture null
             $user = User::create([
                 'google_id' => $uid,
                 'name' => $name,
                 'email' => $email,
                 'password' => Hash::make(\Illuminate\Support\Str::random(16)),
-                'profile_picture' => $picture ? basename($picture) : null,
+                'profile_picture' => null, // Set profile_picture ke null saat pertama kali membuat akun
             ]);
         }
 
@@ -805,7 +798,7 @@ class UserController extends Controller
             'message' => 'Login gagal: ' . $e->getMessage(),
         ], Response::HTTP_UNAUTHORIZED);
     }
-    }
+}
 
     public function upload(Request $request)
     {
@@ -865,7 +858,54 @@ class UserController extends Controller
         return TaskResource::collection($tasks);
     }
 
+    public function getWeeklyCompletedTasks($userId)
+    {
+        try {
+            // Tentukan awal dan akhir minggu (Senin hingga Minggu)
+            $startOfWeek = Carbon::now()->startOfWeek(Carbon::MONDAY);
+            $endOfWeek = Carbon::now()->endOfWeek(Carbon::SUNDAY);
 
+            // Ambil tugas selesai untuk user dalam rentang mingguan
+            $tasks = Task::whereHas('project.group.user', function ($query) use ($userId) {
+                $query->where('id', $userId);
+            })
+                ->where('status', true)
+                ->whereBetween('completed_at', [$startOfWeek, $endOfWeek])
+                ->get();
+
+            // Inisialisasi hasil per hari
+            $result = [
+                'Monday' => 0,
+                'Tuesday' => 0,
+                'Wednesday' => 0,
+                'Thursday' => 0,
+                'Friday' => 0,
+                'Saturday' => 0,
+                'Sunday' => 0,
+            ];
+
+            // Hitung tugas per hari
+            foreach ($tasks as $task) {
+                $day = Carbon::parse($task->completed_at)->dayName;
+                if (isset($result[$day])) {
+                    $result[$day]++;
+                }
+            }
+
+            // Format rentang tanggal
+            $dateRange = $startOfWeek->format('d') . ' - ' . $endOfWeek->format('d M');
+
+            return response()->json([
+                'data' => [
+                    'date_range' => $dateRange,
+                    'tasks' => $result,
+                ]
+            ], Response::HTTP_OK);
+        } catch (\Exception $e) {
+            Log::error("Gagal menghitung tugas selesai mingguan: {$e->getMessage()}", ['exception' => $e]);
+            return response()->json(['error' => 'Gagal menghitung tugas selesai'], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
 }
 
 
