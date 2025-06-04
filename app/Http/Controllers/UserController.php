@@ -674,7 +674,7 @@ class UserController extends Controller
         ], Response::HTTP_BAD_REQUEST);
     }
 
-    public function loginWithGoogle(Request $request)
+public function loginWithGoogle(Request $request)
 {
     // Validasi input
     $validator = Validator::make($request->all(), [
@@ -699,41 +699,34 @@ class UserController extends Controller
         $uid = $firebaseUser['sub'];
         $email = $firebaseUser['email'];
         $name = $firebaseUser['name'] ?? 'Unknown';
-        $picture = $firebaseUser['picture'] ?? null;
 
         // Log data dari Firebase
         Log::info('Firebase user data:', [
             'uid' => $uid,
             'email' => $email,
             'name' => $name,
-            'picture' => $picture,
         ]);
 
         // Cari pengguna berdasarkan google_id
         $existingUser = User::where('google_id', $uid)->first();
 
         if ($existingUser) {
-            // Jika pengguna sudah ada, perbarui data kecuali foto profil jika sudah ada
+            // Jika pengguna sudah ada, perbarui data kecuali profile_picture
             $updateData = [
                 'name' => $name,
                 'email' => $email,
             ];
 
-            // Hanya update foto profil jika pengguna belum memiliki foto profil
-            if (empty($existingUser->profile_picture) && $picture) {
-                $updateData['profile_picture'] = basename($picture);
-            }
-
             $existingUser->update($updateData);
             $user = $existingUser;
         } else {
-            // Jika pengguna belum ada, buat pengguna baru
+            // Jika pengguna belum ada, buat pengguna baru dengan profile_picture null
             $user = User::create([
                 'google_id' => $uid,
                 'name' => $name,
                 'email' => $email,
                 'password' => Hash::make(\Illuminate\Support\Str::random(16)),
-                'profile_picture' => $picture ? basename($picture) : null,
+                'profile_picture' => null, // Set profile_picture ke null saat pertama kali membuat akun
             ]);
         }
 
@@ -754,7 +747,7 @@ class UserController extends Controller
             'message' => 'Login gagal: ' . $e->getMessage(),
         ], Response::HTTP_UNAUTHORIZED);
     }
-    }
+}
 
     public function upload(Request $request)
     {
