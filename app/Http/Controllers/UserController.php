@@ -369,93 +369,23 @@ class UserController extends Controller
         return new GroupResource($group);
     }
 
-    // 🔹 Menambahkan Project ke Group
+
     public function addProjectToGroup(Request $request, $userId, $groupId)
     {
         $user = User::find($userId);
         if (!$user) {
-            return response()->json(['message' => 'User not found'], Response::HTTP_NOT_FOUND);
+            return response()->json(['message' => 'Pengguna tidak ditemukan'], Response::HTTP_NOT_FOUND);
         }
 
         $group = $user->groups()->find($groupId);
         if (!$group) {
-            return response()->json(['message' => 'Group not found'], Response::HTTP_NOT_FOUND);
+            return response()->json(['message' => 'Grup tidak ditemukan'], Response::HTTP_NOT_FOUND);
         }
 
         $project = new Project($request->all());
         $group->projects()->save($project);
 
         return new ProjectResource($project);
-    }
-
-    // 🔹 Menambahkan Task ke Project
-    public function addTaskToProject(Request $request, $userId, $groupId, $projectId)
-    {
-        // Validasi input
-        $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'deadline' => 'nullable|date',
-            'reminder' => 'nullable|date',
-            'priority' => 'required|in:Rendah,Normal,Tinggi',
-            'attachment' => 'nullable|array',
-            'attachment.*' => 'string', // URL file atau link
-            'status' => 'boolean',
-            'quote_id' => 'nullable|exists:quotes,id',
-        ]);
-
-        if ($validator->fails()) {
-            Log::error('Validation failed:', $validator->errors()->toArray());
-            return response()->json([
-                'message' => $validator->errors()->first(),
-            ], Response::HTTP_UNPROCESSABLE_ENTITY);
-        }
-
-        // Verifikasi project, group, dan user
-        $project = Project::with('group.user')->find($projectId);
-
-        Log::info('Project and group information:', [
-            'project' => $project,
-            'group' => $project->group,
-            'user' => $project->group->user,
-        ]);
-
-        if (!$project || !$project->group || $project->group->id !== (int) $groupId || !$project->group->user || $project->group->user->id !== (int) $userId) {
-            Log::info('Forbidden Access:', [
-                'projectGroupId' => $project->group->id ?? 'null',
-                'projectUserId' => $project->group->user->id ?? 'null',
-                'groupId' => $groupId,
-                'userId' => $userId,
-            ]);
-            return response()->json(['message' => 'Forbidden'], Response::HTTP_FORBIDDEN);
-        }
-
-        // Buat task
-        $task = new Task([
-            'projectId' => $projectId,
-            'name' => $request->name,
-            'description' => $request->description,
-            'deadline' => $request->deadline,
-            'reminder' => $request->reminder,
-            'priority' => $request->priority,
-            'status' => $request->status ?? false,
-            'quote_id' => $request->quote_id,
-        ]);
-        $project->tasks()->save($task);
-
-        // Simpan attachment jika ada
-        if ($request->has('attachment') && is_array($request->attachment)) {
-            foreach ($request->attachment as $attachmentUrl) {
-                Attachment::create([
-                    'taskId' => $task->id,
-                    'file_name' => basename($attachmentUrl), // Ambil nama file dari URL
-                    'file_url' => $attachmentUrl,
-                ]);
-            }
-        }
-
-        // Kembalikan task dengan relasi attachments
-        return new TaskResource($task->load('attachments'));
     }
 
     // 🔹 Menghapus Group
@@ -545,11 +475,18 @@ class UserController extends Controller
         }
     }
 
-    // 🔹 Update Project
+        // 🔹 Update Project
     public function updateProject(Request $request, $userId, $groupId, $projectId)
     {
         $project = Project::find($projectId);
-        // if (!$project || $project->group->id != $groupId || $project->group->user->id != $userId) {
+
+        // Periksa apakah proyek ditemukan
+        if (!$project) {
+            return response()->json(['message' => 'Proyek tidak ditemukan'], Response::HTTP_NOT_FOUND);
+        }
+
+        // Validasi kepemilikan proyek (opsional, uncomment jika diperlukan)
+        // if ($project->group->id != $groupId || $project->group->user->id != $userId) {
         //     return response()->json(['message' => 'Forbidden'], Response::HTTP_FORBIDDEN);
         // }
 
@@ -557,8 +494,8 @@ class UserController extends Controller
             $newGroupId = $request->input('groupId');
             $newGroup = \App\Models\Group::find($newGroupId);
             if (!$newGroup || $newGroup->user->id != $userId) {
-                Log::info("New group validation failed: newGroupId=$newGroupId, userId=$userId, newGroupUserId=" . ($newGroup->user->id ?? 'null'));
-                return response()->json(['message' => 'Forbidden: You do not have access to the new group'], Response::HTTP_FORBIDDEN);
+                Log::info("Validasi grup baru gagal: newGroupId=$newGroupId, userId=$userId, newGroupUserId=" . ($newGroup->user->id ?? 'null'));
+                return response()->json(['message' => 'Forbidden: Anda tidak memiliki akses ke grup baru ini'], Response::HTTP_FORBIDDEN);
             }
             $project->groupId = $newGroupId;
         }
