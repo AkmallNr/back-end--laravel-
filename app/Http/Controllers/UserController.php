@@ -63,14 +63,22 @@ class UserController extends Controller
             return response()->json(['message' => 'User not found'], Response::HTTP_NOT_FOUND);
         }
 
+        // Ambil semua proyek yang terkait langsung dengan user (groupId bisa null atau tidak ada)
+        $directProjects = Project::where('userId', $userId)->get();
+
+        // Ambil proyek dari grup yang terkait dengan user
         $groups = $user->groups;
-        $projects = collect();
+        $groupProjects = collect();
 
         foreach ($groups as $group) {
-            $projects = $projects->merge($group->projects);
+            $groupProjects = $groupProjects->merge($group->projects);
         }
 
-        return ProjectResource::collection($projects);
+        // Gabungkan proyek langsung dan proyek dari grup, hapus duplikat jika ada
+        $allProjects = $directProjects->merge($groupProjects)->unique('id');
+
+        // Kembalikan koleksi proyek dalam format resource
+        return ProjectResource::collection($allProjects);
     }
 
     public function getTaskByUser($userId)
