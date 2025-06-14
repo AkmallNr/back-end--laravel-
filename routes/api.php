@@ -27,6 +27,9 @@ Route::prefix('users')->group(function () {
     // Mendapatkan tugas berdasarkan projectId
     Route::get('{userId}/groups/{groupId}/projects/{projectId}/tasks', [UserController::class, 'getTasks']);
 
+    // Route untuk group tidak mandatory
+    Route::post('{userId}/projects', [UserController::class, 'addProjectToUser']);
+
     // Mendapatkan tugas berdasarkan taskId
     Route::get('{userId}/groups/{groupId}/projects/{projectId}/tasks/{taskId}', [UserController::class, 'getTaskById']);
 
