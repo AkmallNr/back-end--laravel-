@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('Layouts.apps')
 
 @section('content')
 <!-- Hero Section -->
@@ -38,7 +38,7 @@
         <div class="h-56 w-full sm:h-72 md:h-96 lg:w-full lg:h-full flex items-center justify-center">
             <!-- Phone Mockup -->
             <div class="relative">
-                <img src="{{ asset('images/phone-mockup.png') }}" 
+                <img src="{{ asset('images/phone_mockup.png') }}" 
                      alt="Schedo App Mockup" 
                      class="w-80 h-auto max-w-full object-contain drop-shadow-2xl">
             </div>

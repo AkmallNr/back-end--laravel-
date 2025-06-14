@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('Layouts.apps')
 
 @section('title', 'Features - Schedo')
 
