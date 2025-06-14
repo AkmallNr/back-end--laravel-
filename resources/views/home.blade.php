@@ -9,10 +9,8 @@
                 <div class="sm:text-center lg:text-left">
                     <h1 class="text-4xl tracking-tight font-bold text-gray-900 sm:text-5xl md:text-6xl">
                         <span class="block">Atur</span>
-                        <span class="block text-orange-400">Tugas</span>
-                        <span class="block">,
-                            <span class="text-orange-400">Jadwal</span>,
-                        </span>
+                        <span class="block text-orange-400">Tugas,</span>,
+                        <span class="text-orange-400">Jadwal</span>,
                         <span class="block">dan
                             <span class="text-orange-400">Fokusmu</span>
                         </span>
@@ -99,7 +97,7 @@
 </section>
 
 <!-- CTA Section -->
-<section class="bg-gray-50">
+<section id="download" class="bg-gray-50">
     <div class="max-w-2xl mx-auto text-center py-16 px-4 sm:py-20 sm:px-6 lg:px-8">
         <h2 class="text-3xl font-bold text-gray-900">
             <span class="block">Siap untuk meningkatkan</span>
