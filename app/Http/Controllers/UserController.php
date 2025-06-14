@@ -289,6 +289,44 @@ class UserController extends Controller
         return ProjectResource::collection($projects);
     }
 
+    public function getTaskWithoutGroup($userId, $projectId)
+    {
+        $tasks = []; // Inisialisasi variabel $tasks sebelum try-catch
+
+        try {
+            // Validasi input
+            $userId = (int) $userId;
+            $projectId = (int) $projectId;
+
+            if ($userId <= 0 || $projectId <= 0) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'User ID atau Project ID tidak valid',
+                    'data' => []
+                ], Response::HTTP_BAD_REQUEST);
+            }
+
+            // Ambil tugas berdasarkan userId dan projectId
+            $tasks = Task::where('userId', $userId) // Perbaiki 'userId' menjadi 'user_id'
+                ->where('projectId', $projectId) // Perbaiki 'projectId' menjadi 'project_id'
+                ->get();
+
+            // Kembalikan response menggunakan TaskResource
+            return TaskResource::collection($tasks)
+                ->additional([
+                    'status' => 'success',
+                    'message' => 'Tugas berhasil diambil'
+                ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage(),
+                'data' => []
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
     // 🔹 Mendapatkan semua tugas berdasarkan projectId
     public function getTasks($userId, $groupId, $projectId)
     {
@@ -303,7 +341,7 @@ class UserController extends Controller
         Log::info('User ID: ' . $userId);
         Log::info('Project Group User ID: ' . $project->group->user->id);
 
-        if ($project->group->id != $groupId || $project->group->user->id != $userId) {
+        if ($project->user->id != $userId) {
             return response()->json(['message' => 'Forbidden'], Response::HTTP_FORBIDDEN);
         }
 
@@ -326,7 +364,7 @@ class UserController extends Controller
         Log::info('User ID: ' . $userId);
         Log::info('Project Group User ID: ' . $project->group->user->id);
 
-        if ($project->group->id != $groupId || $project->group->user->id != $userId) {
+        if ($project->user->id != $userId) {
             return response()->json(['message' => 'Forbidden'], Response::HTTP_FORBIDDEN);
         }
 
@@ -506,10 +544,10 @@ class UserController extends Controller
     }
 
     // 🔹 Menghapus Project
-    public function deleteProject($userId, $groupId, $projectId)
+    public function deleteProject($userId, $projectId)
     {
         $project = Project::find($projectId);
-        if (!$project || $project->group->id != $groupId || $project->group->user->id != $userId) {
+        if (!$project || $project->user->id != $userId) {
             return response()->json(['message' => 'Forbidden'], Response::HTTP_FORBIDDEN);
         }
 
@@ -518,19 +556,102 @@ class UserController extends Controller
     }
 
     // 🔹 Menghapus Task
-    public function deleteTask($userId, $groupId, $projectId, $taskId)
+    public function deleteTask($userId, $projectId, $taskId)
     {
-        $task = Task::find($taskId);
-        if (!$task || $task->project->id != $projectId || $task->project->group->id != $groupId || $task->project->group->user->id != $userId) {
-            return response()->json(['message' => 'Forbidden'], Response::HTTP_FORBIDDEN);
-        }
+        try {
+            // Validasi input
+            $userId = (int) $userId;
+            $projectId = (int) $projectId;
+            $taskId = (int) $taskId;
 
-        $task->delete();
-        return response()->json(['message' => 'Task deleted'], Response::HTTP_OK);
+            if ($userId <= 0 || $projectId <= 0 || $taskId <= 0) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'User ID, Project ID, atau Task ID tidak valid',
+                    'data' => []
+                ], Response::HTTP_BAD_REQUEST);
+            }
+
+            // Cari dan hapus task
+            $task = Task::where('userId', $userId)
+                ->where('projectId', $projectId)
+                ->where('id', $taskId)
+                ->first();
+
+            if (!$task) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Tugas tidak ditemukan atau Anda tidak memiliki akses',
+                    'data' => []
+                ], Response::HTTP_NOT_FOUND);
+            }
+
+            $task->delete();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Tugas berhasil dihapus',
+                'data' => []
+            ], Response::HTTP_OK);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage(),
+                'data' => []
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    public function deleteTaskWithoutGroup($userId, $projectId, $taskId)
+    {
+        try {
+            // Validasi input
+            $userId = (int) $userId;
+            $projectId = (int) $projectId;
+            $taskId = (int) $taskId;
+
+            if ($userId <= 0 || $projectId <= 0 || $taskId <= 0) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'User ID, Project ID, atau Task ID tidak valid',
+                    'data' => []
+                ], Response::HTTP_BAD_REQUEST);
+            }
+
+            // Cari dan hapus task
+            $task = Task::where('userId', $userId)
+                ->where('projectId', $projectId)
+                ->where('id', $taskId)
+                ->first();
+
+            if (!$task) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Tugas tidak ditemukan atau Anda tidak memiliki akses',
+                    'data' => []
+                ], Response::HTTP_NOT_FOUND);
+            }
+
+            $task->delete();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Tugas berhasil dihapus',
+                'data' => []
+            ], Response::HTTP_OK);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage(),
+                'data' => []
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
     }
 
     // 🔹 Update Task
-    public function updateTask($userId, $groupId, $projectId, $taskId, \Illuminate\Http\Request $request)
+    public function updateTask($userId, $projectId, $taskId, \Illuminate\Http\Request $request)
     {
         $project = Project::find($projectId);
 
@@ -538,14 +659,15 @@ class UserController extends Controller
             return response()->json(['message' => 'Project not found'], Response::HTTP_NOT_FOUND);
         }
 
-        if ($project->group->id != $groupId || $project->group->user->id != $userId) {
+        if ($project->user->id != $userId) {
             return response()->json(['message' => 'Forbidden'], Response::HTTP_FORBIDDEN);
         }
 
         try {
-            $task = Task::where('id', $taskId)
+            $task = Task::where('userId', $userId)
                 ->where('projectId', $projectId)
-                ->firstOrFail();
+                ->where('id', $taskId)
+                ->first();
 
             $task->update([
                 'name' => $request->name,
@@ -572,6 +694,78 @@ class UserController extends Controller
         } catch (\Exception $e) {
             Log::error("Gagal memperbarui tugas: {$e->getMessage()}", ['exception' => $e]);
             return response()->json(['error' => 'Gagal memperbarui tugas'], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    public function updateTaskWithoutGroup(Request $request, $userId, $projectId, $taskId)
+    {
+        try {
+            // Validasi input
+            $userId = (int) $userId;
+            $projectId = (int) $projectId;
+            $taskId = (int) $taskId;
+
+            if ($userId <= 0 || $projectId <= 0 || $taskId <= 0) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'User ID, Project ID, atau Task ID tidak valid',
+                    'data' => []
+                ], Response::HTTP_BAD_REQUEST);
+            }
+
+            // Validasi data request
+            $validator = Validator::make($request->all(), [
+                'name' => 'sometimes|string|max:255',
+                'description' => 'sometimes|string',
+                'deadline' => 'sometimes|date',
+                'reminder' => 'sometimes|date',
+                'priority' => 'sometimes|in:Low,Normal,High',
+                'attachment' => 'sometimes|string',
+                'status' => 'sometimes|boolean',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Validasi gagal: ' . $validator->errors()->first(),
+                    'data' => []
+                ], Response::HTTP_BAD_REQUEST);
+            }
+
+            // Cari task
+            $task = Task::where('userId', $userId)
+                ->where('projectId', $projectId)
+                ->where('id', $taskId)
+                ->first();
+
+            if (!$task) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Tugas tidak ditemukan atau Anda tidak memiliki akses',
+                    'data' => []
+                ], Response::HTTP_NOT_FOUND);
+            }
+
+            // Update task dengan data dari request
+            $task->update(array_filter($request->only([
+                'name', 'description', 'deadline', 'reminder', 'priority', 'attachment', 'status'
+            ])));
+
+            // Ambil task yang sudah diperbarui untuk dikembalikan
+            $updatedTask = Task::find($taskId);
+
+            return TaskResource::make($updatedTask)
+                ->additional([
+                    'status' => 'success',
+                    'message' => 'Tugas berhasil diperbarui'
+                ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage(),
+                'data' => []
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 

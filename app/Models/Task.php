@@ -11,12 +11,17 @@ class Task extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['name', 'description', 'deadline', 'reminder', 'priority', 'status', 'completed_at', 'projectId', 'quoteId'];
+    protected $fillable = ['name', 'description', 'deadline', 'reminder', 'priority', 'status', 'completed_at', 'projectId', 'quoteId', 'userId'];
 
     protected $casts = [
         'status' => 'boolean',
         'completed_at' => 'datetime',
     ];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'userId');
+    }
 
     // Relasi ke Project (Many to One)
     public function project()
