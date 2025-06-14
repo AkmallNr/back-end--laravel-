@@ -117,59 +117,6 @@ class UserController extends Controller
         return ScheduleResource::collection($schedule);
     }
 
-    public function getSchedulesByDateRange($userId, Request $request)
-    {
-        try {
-            // Log data yang diterima
-            Log::debug("Received request: userId=$userId, startDate={$request->input('startDate')}, endDate={$request->input('endDate')}");
-
-            // Validasi input
-            $validated = $request->validate([
-                'startDate' => 'required|date_format:d/m/Y',
-                'endDate' => 'required|date_format:d/m/Y|after_or_equal:startDate',
-            ]);
-
-            // Parse tanggal menggunakan createFromFormat
-            $startDate = Carbon::createFromFormat('d/m/Y', $validated['startDate'])->startOfDay();
-            $endDate = Carbon::createFromFormat('d/m/Y', $validated['endDate'])->endOfDay();
-
-            Log::debug("Fetching schedules for userId: $userId, startDate: $startDate, endDate: $endDate");
-
-            // Query untuk mengambil jadwal
-            $schedules = Schedule::where('userId', $userId)
-                ->where(function ($query) use ($startDate, $endDate) {
-                    $query->whereRaw("TO_DATE(SUBSTRING(\"startTime\", 1, 10), 'DD/MM/YYYY') >= ?", [$startDate])
-                        ->whereRaw("TO_DATE(SUBSTRING(\"endTime\", 1, 10), 'DD/MM/YYYY') <= ?", [$endDate]);
-                })
-                ->get();
-
-            if ($schedules->isEmpty()) {
-                return response()->json([
-                    'message' => 'No schedules found for the given date range.',
-                    'data' => []
-                ], 200);
-            }
-
-            return response()->json([
-                'message' => 'Schedules retrieved successfully.',
-                'data' => $schedules
-            ], 200);
-
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            Log::error("Validation failed: " . json_encode($e->errors()));
-            return response()->json([
-                'message' => 'Validation failed.',
-                'errors' => $e->errors()
-            ], 422);
-        } catch (\Exception $e) {
-            Log::error("Error fetching schedules: {$e->getMessage()}");
-            return response()->json([
-                'message' => 'An error occurred while fetching schedules.',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
-
     // 🔹 Menambahkan quote
     public function addQuote(Request $request, $userId)
     {
@@ -423,22 +370,44 @@ class UserController extends Controller
     }
 
     // 🔹 Menambahkan Project ke Group
-    public function addProjectToGroup(Request $request, $userId, $groupId)
+    public function addProjectToGroup(Request $request, $userId, $groupId = null)
     {
         $user = User::find($userId);
         if (!$user) {
             return response()->json(['message' => 'User not found'], Response::HTTP_NOT_FOUND);
         }
 
-        $group = $user->groups()->find($groupId);
-        if (!$group) {
-            return response()->json(['message' => 'Group not found'], Response::HTTP_NOT_FOUND);
+        // Validasi input
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'startDate' => 'nullable|date',
+            'endDate' => 'nullable|date|after_or_equal:startDate',
+        ]);
+
+        // Jika groupId diberikan, pastikan grup ada dan terkait dengan user
+        $group = null;
+        if ($groupId) {
+            $group = $user->groups()->find($groupId);
+            if (!$group) {
+                return response()->json(['message' => 'Group not found or not associated with user'], Response::HTTP_NOT_FOUND);
+            }
         }
 
-        $project = new Project($request->all());
-        $group->projects()->save($project);
+        // Buat proyek baru
+        $project = new Project($validated);
+        $project->userId = $userId; // Set userId
+        $project->groupId = $groupId; // Set groupId (bisa null)
+
+        // Simpan proyek
+        $project->save();
 
         return new ProjectResource($project);
+    }
+
+    public function addProjectToUser(Request $request, $userId)
+    {
+        return $this->addProjectToGroup($request, $userId, null);
     }
 
     // 🔹 Menambahkan Task ke Project
