@@ -28,8 +28,8 @@
                 <div class="hidden md:block">
                     <div class="ml-10 flex items-baseline space-x-8">
                         <a href="{{ route('home') }}" class="text-gray-900 hover:text-gray-600 px-3 py-2 text-sm font-medium">Home</a>
-                        <a href="{{ route('features') }}" class="text-gray-500 hover:text-gray-600 px-3 py-2 text-sm font-medium">Features</a>
-                        <a href="{{ route('download') }}" class="text-gray-500 hover:text-gray-600 px-3 py-2 text-sm font-medium">Download</a>
+                        <a href="features" class="text-gray-500 hover:text-gray-600 px-3 py-2 text-sm font-medium">Features</a>
+                        <a href="download" class="text-gray-500 hover:text-gray-600 px-3 py-2 text-sm font-medium">Download</a>
                         <button class="bg-orange-400 hover:bg-orange-500 text-white px-6 py-2 rounded-full text-sm font-medium transition-colors">
                             Login
                         </button>

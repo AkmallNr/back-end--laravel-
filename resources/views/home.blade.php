@@ -10,13 +10,13 @@
                     <h1 class="text-4xl tracking-tight font-bold text-gray-900 sm:text-5xl md:text-6xl">
                         <span class="block">Atur</span>
                         <span class="block text-orange-400">Tugas</span>
-                        <span class="block">, 
+                        <span class="block">,
                             <span class="text-orange-400">Jadwal</span>,
                         </span>
-                        <span class="block">dan 
+                        <span class="block">dan
                             <span class="text-orange-400">Fokusmu</span>
                         </span>
-                        <span class="block">dengan 
+                        <span class="block">dengan
                             <span class="text-blue-500">Mudah</span>!
                         </span>
                     </h1>
@@ -38,8 +38,8 @@
         <div class="h-56 w-full sm:h-72 md:h-96 lg:w-full lg:h-full flex items-center justify-center">
             <!-- Phone Mockup -->
             <div class="relative">
-                <img src="{{ asset('images/phone_mockup.png') }}" 
-                     alt="Schedo App Mockup" 
+                <img src="{{ asset('images/phone_mockup.png') }}"
+                     alt="Schedo App Mockup"
                      class="w-80 h-auto max-w-full object-contain drop-shadow-2xl">
             </div>
         </div>
