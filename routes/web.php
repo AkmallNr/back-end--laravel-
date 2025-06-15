@@ -8,12 +8,15 @@ Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/features', [HomeController::class, 'features'])->name('features');
 Route::get('/download', [HomeController::class, 'download'])->name('download');
 
-// Admin Routes with default auth middleware
-Route::prefix('admin')->middleware('auth')->group(function () {
+// Admin Login and Logout Routes (no auth middleware)
+Route::prefix('admin')->group(function () {
     Route::get('/login', [AdminController::class, 'showLoginForm'])->name('login');
     Route::post('/login', [AdminController::class, 'login']);
     Route::post('/logout', [AdminController::class, 'logout'])->name('logout');
+});
 
+// Admin Protected Routes with auth middleware
+Route::prefix('admin')->middleware('auth')->group(function () {
     Route::get('/groups', [AdminController::class, 'listGroup'])->name('admin.groups');
     Route::get('/groups/{id}/edit', [AdminController::class, 'editGroup'])->name('admin.groups.edit');
     Route::put('/groups/{id}', [AdminController::class, 'updateGroup'])->name('admin.groups.update');
