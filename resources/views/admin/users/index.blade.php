@@ -2,16 +2,17 @@
 
 @section('content')
 <div class="table-container">
-    <h2 class="mb-4">All User</h2>
+    <h2 class="mb-4">All Users</h2>
     
     <div class="table-responsive">
         <table class="table table-hover">
             <thead class="table-light">
                 <tr>
-                    <th>Id</th>
+                    <th>ID</th>
+                    <th>Profile Picture</th>
                     <th>Name</th>
                     <th>Email</th>
-                    <th>Google Id</th>
+                    <th>Google ID</th>
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -19,6 +20,13 @@
                 @forelse($users as $user)
                 <tr>
                     <td>{{ $user->id }}</td>
+                    <td>
+                        @if ($user->profile_picture)
+                            <img src="{{ Storage::url($user->profile_picture) }}" alt="{{ $user->name }}" class="avatar-sm" style="width: 40px; height: 40px; border-radius: 50%;">
+                        @else
+                            <img src="{{ asset('images/default.jpg') }}" alt="Default" class="avatar-sm" style="width: 40px; height: 40px; border-radius: 50%;">
+                        @endif
+                    </td>
                     <td>{{ $user->name }}</td>
                     <td>{{ $user->email }}</td>
                     <td>{{ $user->google_id ?? '-' }}</td>
@@ -38,7 +46,7 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="5" class="text-center py-4">No users found</td>
+                    <td colspan="6" class="text-center py-4">No users found</td>
                 </tr>
                 @endforelse
             </tbody>
