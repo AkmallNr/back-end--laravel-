@@ -1,7 +1,7 @@
 return [
     'defaults' => [
-        'guard' => 'web', // String, bukan integer
-        'passwords' => 'users', // String, bukan integer
+        'guard' => 'web',
+        'passwords' => 'users',
     ],
 
     'guards' => [
@@ -30,14 +30,14 @@ return [
         'users' => [
             'provider' => 'users',
             'table' => 'password_resets',
-            'expire' => 60, // Integer, ini valid
-            'throttle' => 60, // Integer, ini valid
+            'expire' => 60,
+            'throttle' => 60,
         ],
         'admins' => [
             'provider' => 'admins',
             'table' => 'password_resets',
-            'expire' => 60, // Integer, ini valid
-            'throttle' => 60, // Integer, ini valid
+            'expire' => 60,
+            'throttle' => 60,
         ],
     ],
 ];
