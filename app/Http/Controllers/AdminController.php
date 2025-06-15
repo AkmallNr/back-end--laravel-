@@ -15,9 +15,9 @@ class AdminController extends Controller
 {
     public function __construct()
     {
-        $this->middleware('auth'); // Gunakan middleware auth default (sesuai config/auth.php)
+        $this->middleware('auth')->except(['showLoginForm', 'login']);
     }
-
+    
     // Admin Login
     public function showLoginForm()
     {
