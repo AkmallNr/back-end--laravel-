@@ -8,6 +8,8 @@ Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/features', [HomeController::class, 'features'])->name('features');
 Route::get('/download', [HomeController::class, 'download'])->name('download');
 
+Route::post('/login', [AuthController::class, 'login']);
+
 // Admin Routes (without authentication middleware for now)
 //Route::prefix('admin')->group(function () {
     // User Management
