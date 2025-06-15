@@ -9,9 +9,7 @@ class Admin extends Authenticatable
 {
     use Notifiable;
 
-    protected $table = 'admins'; // Pastikan ini sesuai dengan nama tabel di database
-
+    protected $table = 'admins';
     protected $fillable = ['username', 'password'];
-
     protected $hidden = ['password', 'remember_token'];
 }

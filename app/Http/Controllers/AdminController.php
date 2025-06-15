@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Auth;
 
 class AdminController extends Controller
 {
-   public function __construct()
+    public function __construct()
     {
         $this->middleware('auth:admin')->except(['showLoginForm', 'login']); // Gunakan guard admin
     }
@@ -49,10 +49,9 @@ class AdminController extends Controller
         return redirect('/admin/login')->with('success', 'Logout successful!');
     }
 
-    // Group (Project) Management
     public function listGroup()
     {
-        $groups = Project::with('admin', 'user')->get();
+        $groups = Group::all(); // Ambil semua grup tanpa relasi admin
         return view('admin.groups.index', compact('groups'));
     }
 
@@ -98,7 +97,7 @@ class AdminController extends Controller
     // Task Management
     public function listTask()
     {
-        $tasks = Task::with('admin', 'user', 'project')->get();
+        $tasks = Task::with('user', 'project')->get(); // Hapus 'admin' dari with
         return view('admin.tasks.index', compact('tasks'));
     }
 
@@ -154,7 +153,7 @@ class AdminController extends Controller
     // Schedule Management
     public function listSchedule()
     {
-        $schedules = Schedule::with('admin', 'user')->get();
+        $schedules = Schedule::with('user')->get(); // Hapus 'admin' dari with
         return view('admin.schedules.index', compact('schedules'));
     }
 
