@@ -5,85 +5,63 @@ namespace App\Http\Controllers;
 use App\Models\Project;
 use App\Models\Task;
 use App\Models\Schedule;
+use App\Models\Admin;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Auth;
 
 class AdminController extends Controller
 {
-//    public function __construct()
- //   {
-  //      $this->middleware('auth');
-   // }
+    // public function __construct()
+    // {
+    //     $this->middleware('auth'); // Komentari sementara
+    // }
 
-    // User Management
-    public function listUser()
+    // Admin Login
+    public function showLoginForm()
     {
-        $users = User::all();
-        return view('admin.users.index', compact('users'));
+        return view('auth.login');
     }
 
-    public function editUser($id)
+    public function login(Request $request)
     {
-        $user = User::findOrFail($id);
-        return view('admin.users.edit', compact('user'));
-    }
-
-    public function updateUser(Request $request, $id)
-    {
-        $user = User::findOrFail($id);
-
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email,' . $id,
-            'google_id' => 'nullable|string|max:255',
-            'profile_picture' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+        $credentials = $request->validate([
+            'username' => 'required|string',
+            'password' => 'required|string',
         ]);
 
-        $data = $request->only(['name', 'email', 'google_id']);
-
-        if ($request->hasFile('profile_picture')) {
-            if ($user->profile_picture && Storage::disk('public')->exists($user->profile_picture)) {
-                Storage::disk('public')->delete($user->profile_picture);
-            }
-            $path = $request->file('profile_picture')->store('profile_pictures', 'public');
-            $data['profile_picture'] = basename($path);
+        if (Auth::attempt(['username' => $credentials['username'], 'password' => $credentials['password']], $request->has('remember'))) {
+            $request->session()->regenerate();
+            return redirect()->intended('/admin/groups')->with('success', 'Login successful!'); // Redirect ke daftar groups setelah login
         }
 
-        $user->update($data);
-
-        return redirect()->route('admin.users')->with('success', 'User updated successfully');
+        return back()->withErrors([
+            'username' => 'The provided credentials do not match our records.',
+        ])->withInput($request->only('username', 'remember'));
     }
 
-    public function deleteUser($id)
+    public function logout(Request $request)
     {
-        $user = User::findOrFail($id);
-
-        if ($user->projects()->exists() || $user->tasks()->exists() || $user->schedule()->exists()) {
-            return redirect()->route('admin.users')->with('error', 'Cannot delete user with associated projects, tasks, or schedules.');
-        }
-
-        if ($user->profile_picture && Storage::disk('public')->exists($user->profile_picture)) {
-            Storage::disk('public')->delete($user->profile_picture);
-        }
-
-        $user->delete();
-
-        return redirect()->route('admin.users')->with('success', 'User deleted successfully');
+        Auth::logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+        return redirect('/admin/login')->with('success', 'Logout successful!');
     }
 
     // Group (Project) Management
     public function listGroup()
     {
-        $groups = Project::with('user')->get();
+        $groups = Project::with('admin', 'user')->get();
         return view('admin.groups.index', compact('groups'));
     }
 
     public function editGroup($id)
     {
         $group = Project::findOrFail($id);
+        $admins = Admin::all();
         $users = User::all();
-        return view('admin.groups.edit', compact('group', 'users'));
+        return view('admin.groups.edit', compact('group', 'admins', 'users'));
     }
 
     public function updateGroup(Request $request, $id)
@@ -95,10 +73,11 @@ class AdminController extends Controller
             'description' => 'nullable|string',
             'startDate' => 'required|date',
             'endDate' => 'required|date|after:startDate',
-            'userId' => 'required|exists:users,id',
+            'adminId' => 'nullable|exists:admins,id',
+            'userId' => 'nullable|exists:users,id',
         ]);
 
-        $group->update($request->only(['name', 'description', 'startDate', 'endDate', 'userId']));
+        $group->update($request->only(['name', 'description', 'startDate', 'endDate', 'adminId', 'userId']));
 
         return redirect()->route('admin.groups')->with('success', 'Group updated successfully');
     }
@@ -119,16 +98,17 @@ class AdminController extends Controller
     // Task Management
     public function listTask()
     {
-        $tasks = Task::with('user', 'project')->get();
+        $tasks = Task::with('admin', 'user', 'project')->get();
         return view('admin.tasks.index', compact('tasks'));
     }
 
     public function editTask($id)
     {
         $task = Task::findOrFail($id);
+        $admins = Admin::all();
         $users = User::all();
         $projects = Project::all();
-        return view('admin.tasks.edit', compact('task', 'users', 'projects'));
+        return view('admin.tasks.edit', compact('task', 'admins', 'users', 'projects'));
     }
 
     public function updateTask(Request $request, $id)
@@ -144,10 +124,11 @@ class AdminController extends Controller
             'status' => 'required|boolean',
             'completed_at' => 'nullable|date',
             'projectId' => 'nullable|exists:projects,id',
-            'userId' => 'required|exists:users,id',
+            'adminId' => 'nullable|exists:admins,id',
+            'userId' => 'nullable|exists:users,id',
         ]);
 
-        $task->update($request->only(['name', 'description', 'deadline', 'reminder', 'priority', 'status', 'completed_at', 'projectId', 'userId']));
+        $task->update($request->only(['name', 'description', 'deadline', 'reminder', 'priority', 'status', 'completed_at', 'projectId', 'adminId', 'userId']));
 
         return redirect()->route('admin.tasks')->with('success', 'Task updated successfully');
     }
@@ -173,15 +154,16 @@ class AdminController extends Controller
     // Schedule Management
     public function listSchedule()
     {
-        $schedules = Schedule::with('user')->get();
+        $schedules = Schedule::with('admin', 'user')->get();
         return view('admin.schedules.index', compact('schedules'));
     }
 
     public function editSchedule($id)
     {
         $schedule = Schedule::findOrFail($id);
+        $admins = Admin::all();
         $users = User::all();
-        return view('admin.schedules.edit', compact('schedule', 'users'));
+        return view('admin.schedules.edit', compact('schedule', 'admins', 'users'));
     }
 
     public function updateSchedule(Request $request, $id)
@@ -195,10 +177,11 @@ class AdminController extends Controller
             'day' => 'nullable|string',
             'startTime' => 'required|date_format:H:i',
             'endTime' => 'required|date_format:H:i|after:startTime',
-            'userId' => 'required|exists:users,id',
+            'adminId' => 'nullable|exists:admins,id',
+            'userId' => 'nullable|exists:users,id',
         ]);
 
-        $schedule->update($request->only(['name', 'notes', 'repeat', 'day', 'startTime', 'endTime', 'userId']));
+        $schedule->update($request->only(['name', 'notes', 'repeat', 'day', 'startTime', 'endTime', 'adminId', 'userId']));
 
         return redirect()->route('admin.schedules')->with('success', 'Schedule updated successfully');
     }

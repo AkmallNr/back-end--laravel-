@@ -3,22 +3,17 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\AdminController;
-use App\Http\Controllers\AuthController;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/features', [HomeController::class, 'features'])->name('features');
 Route::get('/download', [HomeController::class, 'download'])->name('download');
 
-Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
-Route::post('/login', [AuthController::class, 'login']);
-
 // Admin Routes (without authentication middleware for now)
-//Route::prefix('admin')->group(function () {
-    // User Management
-Route::get('/users', [AdminController::class, 'listUser'])->name('admin.users');
-    Route::get('/users/{id}/edit', [AdminController::class, 'editUser'])->name('admin.users.edit');
-    Route::put('/users/{id}', [AdminController::class, 'updateUser'])->name('admin.users.update');
-    Route::delete('/users/{id}', [AdminController::class, 'deleteUser'])->name('admin.users.delete');
+Route::prefix('admin')->group(function () {
+    // Admin Login
+    Route::get('/login', [AdminController::class, 'showLoginForm'])->name('login');
+    Route::post('/login', [AdminController::class, 'login']);
+    Route::post('/logout', [AdminController::class, 'logout'])->name('logout');
 
     // Group Management
     Route::get('/groups', [AdminController::class, 'listGroup'])->name('admin.groups');
@@ -37,4 +32,4 @@ Route::get('/users', [AdminController::class, 'listUser'])->name('admin.users');
     Route::get('/schedules/{id}/edit', [AdminController::class, 'editSchedule'])->name('admin.schedules.edit');
     Route::put('/schedules/{id}', [AdminController::class, 'updateSchedule'])->name('admin.schedules.update');
     Route::delete('/schedules/{id}', [AdminController::class, 'deleteSchedule'])->name('admin.schedules.delete');
-//});
+});
