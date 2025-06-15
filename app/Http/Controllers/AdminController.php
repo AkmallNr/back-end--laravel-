@@ -31,7 +31,7 @@ class AdminController extends Controller
             'password' => 'required|string',
         ]);
 
-        if (Auth::attempt(['username' => $credentials['username'], 'password' => $credentials['password']], $request->has('remember'))) {
+        if (Auth::guard('web')->attempt(['username' => $credentials['username'], 'password' => $credentials['password']], $request->has('remember'))) {
             $request->session()->regenerate();
             return redirect()->intended('/admin/groups')->with('success', 'Login successful!');
         }
@@ -40,7 +40,7 @@ class AdminController extends Controller
             'username' => 'The provided credentials do not match our records.',
         ])->withInput($request->only('username', 'remember'));
     }
-
+    
     public function logout(Request $request)
     {
         Auth::logout();
