@@ -22,7 +22,7 @@
                     <div class="flex-shrink-0">
                         <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded transform rotate-12 flex items-center justify-center">
                             <!-- <span class="text-white font-bold text-sm">S</span> -->
-                            <img src="{{ asset('images/logo.png')" alt="logo schedo">
+                            <img src="{{ asset('images/logo.png')}}" alt="logo schedo">
                         </div>
                     </div>
                 </div>
