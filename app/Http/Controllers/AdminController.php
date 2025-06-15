@@ -13,11 +13,11 @@ use Illuminate\Support\Facades\Auth;
 
 class AdminController extends Controller
 {
-    public function __construct()
+   public function __construct()
     {
-        $this->middleware('auth')->except(['showLoginForm', 'login']);
+        $this->middleware('auth:admin')->except(['showLoginForm', 'login']); // Gunakan guard admin
     }
-    
+
     // Admin Login
     public function showLoginForm()
     {
@@ -31,7 +31,7 @@ class AdminController extends Controller
             'password' => 'required|string',
         ]);
 
-        if (Auth::guard('web')->attempt(['username' => $credentials['username'], 'password' => $credentials['password']], $request->has('remember'))) {
+        if (Auth::guard('admin')->attempt(['username' => $credentials['username'], 'password' => $credentials['password']], $request->has('remember'))) {
             $request->session()->regenerate();
             return redirect()->intended('/admin/groups')->with('success', 'Login successful!');
         }
@@ -40,10 +40,10 @@ class AdminController extends Controller
             'username' => 'The provided credentials do not match our records.',
         ])->withInput($request->only('username', 'remember'));
     }
-    
+
     public function logout(Request $request)
     {
-        Auth::logout();
+        Auth::guard('admin')->logout(); // Logout menggunakan guard admin
         $request->session()->invalidate();
         $request->session()->regenerateToken();
         return redirect('/admin/login')->with('success', 'Logout successful!');

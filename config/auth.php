@@ -1,28 +1,28 @@
 return [
     'defaults' => [
-        'guard' => 'web', // Guard default untuk pengguna biasa
-        'passwords' => 'users', // Default untuk reset password
+        'guard' => 'web', // Default untuk pengguna biasa
+        'passwords' => 'users',
     ],
 
     'guards' => [
         'web' => [
             'driver' => 'session',
-            'provider' => 'users', // Guard web untuk pengguna biasa
+            'provider' => 'users',
         ],
         'admin' => [
             'driver' => 'session',
-            'provider' => 'admins', // Guard terpisah untuk admin
+            'provider' => 'admins',
         ],
     ],
 
     'providers' => [
         'users' => [
             'driver' => 'eloquent',
-            'model' => App\Models\User::class, // Model default untuk pengguna biasa
+            'model' => App\Models\User::class,
         ],
         'admins' => [
             'driver' => 'eloquent',
-            'model' => App\Models\Admin::class, // Model untuk admin
+            'model' => App\Models\Admin::class,
         ],
     ],
 
@@ -35,7 +35,7 @@ return [
         ],
         'admins' => [
             'provider' => 'admins',
-            'table' => 'password_resets', // Bisa menggunakan tabel yang sama atau terpisah
+            'table' => 'password_resets',
             'expire' => 60,
             'throttle' => 60,
         ],
