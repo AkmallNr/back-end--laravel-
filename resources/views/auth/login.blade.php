@@ -9,7 +9,7 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: grey;
             min-height: 100vh;
             display: flex;
             align-items: center;
@@ -34,7 +34,7 @@
         .logo {
             width: 60px;
             height: 60px;
-            background: linear-gradient(45deg, #3498db, #2ecc71);
+            background: white;
             border-radius: 12px;
             display: inline-flex;
             align-items: center;
