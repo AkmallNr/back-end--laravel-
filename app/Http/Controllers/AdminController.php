@@ -13,10 +13,10 @@ use Illuminate\Support\Facades\Auth;
 
 class AdminController extends Controller
 {
-    // public function __construct()
-    // {
-    //     $this->middleware('auth'); // Komentari sementara
-    // }
+    public function __construct()
+    {
+        $this->middleware('auth'); // Gunakan middleware auth default (sesuai config/auth.php)
+    }
 
     // Admin Login
     public function showLoginForm()
@@ -33,7 +33,7 @@ class AdminController extends Controller
 
         if (Auth::attempt(['username' => $credentials['username'], 'password' => $credentials['password']], $request->has('remember'))) {
             $request->session()->regenerate();
-            return redirect()->intended('/admin/groups')->with('success', 'Login successful!'); // Redirect ke daftar groups setelah login
+            return redirect()->intended('/admin/groups')->with('success', 'Login successful!');
         }
 
         return back()->withErrors([
