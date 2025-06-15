@@ -31,7 +31,9 @@
                         <a href="{{ route('home') }}#features" class="text-gray-500 hover:text-gray-600 px-3 py-2 text-sm font-medium">Features</a>
                         <a href="{{ route('home') }}#download" class="text-gray-500 hover:text-gray-600 px-3 py-2 text-sm font-medium">Download</a>
                         <button class="bg-orange-400 hover:bg-orange-500 text-white px-6 py-2 rounded-full text-sm font-medium transition-colors">
-                            Login
+                           <a href="{{ route('login') }}" class="bg-orange-400 hover:bg-orange-500 text-white px-6 py-2 rounded-full text-sm font-medium transition-colors">
+                                Login
+                            </a>
                         </button>
                     </div>
                 </div>

@@ -42,9 +42,8 @@
             margin-bottom: 20px;
         }
         
-        .logo i {
-            color: white;
-            font-size: 24px;
+        .logo img {
+            height: 40px;
         }
         
         .welcome-title {
@@ -229,7 +228,7 @@
             </div>
 
             <!-- Login Button -->
-            <button type="submit" class="btn btn-login">
+            <button type="submit" class="btn-login">
                 <i class="fas fa-sign-in-alt me-2"></i>Sign In
             </button>
         </form>
@@ -244,4 +243,4 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
-</html>
+</html> 
