@@ -217,7 +217,7 @@ class AdminController extends Controller
         return view('admin.users.edit', compact('user', 'admins'));
     }
 
-    public function updateUser(Request $request, $id)
+   public function updateUser(Request $request, $id)
     {
         $user = User::findOrFail($id);
 
@@ -225,19 +225,9 @@ class AdminController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email,' . $id,
             'google_id' => 'nullable|string',
-            'profile_picture' => 'nullable|image|max:2048', // Maksimal 2MB
         ]);
 
         $data = $request->only(['name', 'email', 'google_id']);
-
-        if ($request->hasFile('profile_picture')) {
-            // Hapus foto lama jika ada
-            if ($user->profile_picture && Storage::disk('public')->exists($user->profile_picture)) {
-                Storage::disk('public')->delete($user->profile_picture);
-            }
-            // Simpan foto baru
-            $data['profile_picture'] = $request->file('profile_picture')->store('profile_pictures', 'public');
-        }
 
         $user->update($data);
 

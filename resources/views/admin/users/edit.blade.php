@@ -9,7 +9,7 @@
         </a>
     </div>
     
-    <form action="{{ route('admin.users.update', $user->id) }}" method="POST" enctype="multipart/form-data">
+    <form action="{{ route('admin.users.update', $user->id) }}" method="POST">
         @csrf
         @method('PUT')
         
@@ -44,17 +44,6 @@
                     <input type="text" class="form-control @error('google_id') is-invalid @enderror" 
                            id="google_id" name="google_id" value="{{ old('google_id', $user->google_id) }}">
                     @error('google_id')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                    @enderror
-                </div>
-            </div>
-            
-            <div class="col-md-6">
-                <div class="mb-3">
-                    <label for="profile_picture" class="form-label">Profile Picture</label>
-                    <input type="file" class="form-control @error('profile_picture') is-invalid @enderror" 
-                           id="profile_picture" name="profile_picture" accept="image/*">
-                    @error('profile_picture')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
                 </div>
