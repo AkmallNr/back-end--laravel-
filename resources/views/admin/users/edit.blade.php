@@ -54,7 +54,7 @@
                     <label for="profile_picture" class="form-label">Profile Picture</label>
                     <input type="file" class="form-control @error('profile_picture') is-invalid @enderror" 
                            id="profile_picture" name="profile_picture" accept="image/*">
-                    @if ($user->profile_picture)
+                    @if ($user->profile_picture && Storage::disk('public')->exists($user->profile_picture))
                         <div class="mt-2">
                             <img src="{{ Storage::url($user->profile_picture) }}" alt="{{ $user->name }}" style="width: 100px; height: 100px; border-radius: 50%;">
                         </div>

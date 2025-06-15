@@ -231,9 +231,11 @@ class AdminController extends Controller
         $data = $request->only(['name', 'email', 'google_id']);
 
         if ($request->hasFile('profile_picture')) {
+            // Hapus foto lama jika ada
             if ($user->profile_picture && Storage::disk('public')->exists($user->profile_picture)) {
                 Storage::disk('public')->delete($user->profile_picture);
             }
+            // Simpan foto baru
             $data['profile_picture'] = $request->file('profile_picture')->store('profile_pictures', 'public');
         }
 

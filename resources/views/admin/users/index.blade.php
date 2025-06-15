@@ -21,7 +21,7 @@
                 <tr>
                     <td>{{ $user->id }}</td>
                     <td>
-                        @if ($user->profile_picture)
+                        @if ($user->profile_picture && Storage::disk('public')->exists($user->profile_picture))
                             <img src="{{ Storage::url($user->profile_picture) }}" alt="{{ $user->name }}" class="avatar-sm" style="width: 40px; height: 40px; border-radius: 50%;">
                         @else
                             <img src="{{ asset('images/default.jpg') }}" alt="Default" class="avatar-sm" style="width: 40px; height: 40px; border-radius: 50%;">
