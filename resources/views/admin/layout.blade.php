@@ -128,7 +128,7 @@
                     </nav>
                     
                     <div class="px-3">
-                        <form method="POST" action="{{ route('logout') }}">
+                        <form method="GET" action="{{ route('logout') }}">
                             @csrf
                             <button type="submit" class="nav-link logout-btn w-100 text-start border-0 bg-transparent">
                                 <i class="fas fa-sign-out-alt"></i>

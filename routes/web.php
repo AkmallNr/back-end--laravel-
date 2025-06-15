@@ -12,7 +12,7 @@ Route::get('/download', [HomeController::class, 'download'])->name('download');
 Route::prefix('admin')->group(function () {
     Route::get('/login', [AdminController::class, 'showLoginForm'])->name('login');
     Route::post('/login', [AdminController::class, 'login']);
-    Route::post('/logout', [AdminController::class, 'logout'])->name('logout');
+    Route::get('/admin/logout', [AdminController::class, 'logout'])->name('logout');
 });
 
 // Admin Protected Routes with auth:admin middleware
