@@ -104,7 +104,7 @@
                 <div class="sidebar d-flex flex-column">
                     <div class="d-flex align-items-center px-3 mb-4">
                         <div class="logo-icon">
-                            <i class="fas fa-layer-group text-white"></i>
+                            <img src="{{ asset('images/logo.png') }}" alt="logo" style="height: 40px;">
                         </div>
                     </div>
                     
