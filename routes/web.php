@@ -16,7 +16,7 @@ Route::prefix('admin')->group(function () {
 });
 
 // Admin Protected Routes with auth middleware
-Route::prefix('admin')->middleware('auth')->group(function () {
+Route::prefix('admin')->middleware('auth:admin')->group(function () {
     Route::get('/groups', [AdminController::class, 'listGroup'])->name('admin.groups');
     Route::get('/groups/{id}/edit', [AdminController::class, 'editGroup'])->name('admin.groups.edit');
     Route::put('/groups/{id}', [AdminController::class, 'updateGroup'])->name('admin.groups.update');
