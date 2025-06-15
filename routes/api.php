@@ -59,8 +59,7 @@ Route::prefix('users')->group(function () {
     // Menghapus task
     Route::delete('{userId}/groups/{groupId}/projects/{projectId}/tasks/{taskId}', [UserController::class, 'deleteTask']);
 
-    // Update task
-    Route::put('{userId}/projects/{projectId}/tasks/{taskId}', [UserController::class, 'updateTask']);
+    Route::put('{userId}/groups/{groupId}/projects/{projectId}/tasks/{taskId}', [UserController::class, 'updateTask']);
 
     // Update project
     Route::put('{userId}/groups/{groupId}/projects/{projectId}', [UserController::class, 'updateProject']);
