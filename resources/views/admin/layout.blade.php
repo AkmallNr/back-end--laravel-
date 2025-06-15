@@ -46,7 +46,7 @@
         .logo {
             font-size: 24px;
             font-weight: bold;
-            color: #2a9d8f;
+            color:rgb(255, 255, 255);
         }
         .user-info {
             color: #333;
