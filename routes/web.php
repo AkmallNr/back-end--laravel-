@@ -32,6 +32,9 @@ Route::prefix('admin')->middleware('auth:admin')->group(function () {
     Route::put('/schedules/{id}', [AdminController::class, 'updateSchedule'])->name('admin.schedules.update');
     Route::delete('/schedules/{id}', [AdminController::class, 'deleteSchedule'])->name('admin.schedules.delete');
 
-    // Tambahkan rute untuk admin.users
+    // Rute untuk admin.users
     Route::get('/users', [AdminController::class, 'listUsers'])->name('admin.users');
+    Route::get('/users/{id}/edit', [AdminController::class, 'editUser'])->name('admin.users.edit'); // Tambahkan rute edit
+    Route::delete('/users/{id}', [AdminController::class, 'deleteUser'])->name('admin.users.delete'); // Tambahkan rute delete
+    Route::put('/users/{id}', [AdminController::class, 'updateUser'])->name('admin.users.update');
 });

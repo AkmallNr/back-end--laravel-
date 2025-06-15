@@ -199,4 +199,33 @@ class AdminController extends Controller
 
         return redirect()->route('admin.schedules')->with('success', 'Schedule deleted successfully');
     }
+
+    public function editUser($id)
+    {
+        $user = User::findOrFail($id);
+        $admins = Admin::all(); // Jika diperlukan untuk dropdown atau logika lain
+        return view('admin.users.edit', compact('user', 'admins')); // Pastikan ada view 'admin/users/edit.blade.php'
+    }
+
+    public function deleteUser($id)
+    {
+        $user = User::findOrFail($id);
+        $user->delete();
+
+        return redirect()->route('admin.users')->with('success', 'User deleted successfully');
+    }
+
+    public function updateUser(Request $request, $id)
+    {
+        $user = User::findOrFail($id);
+
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email,' . $id,
+        ]);
+
+        $user->update($request->only(['name', 'email']));
+
+        return redirect()->route('admin.users')->with('success', 'User updated successfully');
+    }
 }
