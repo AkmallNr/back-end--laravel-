@@ -15,7 +15,7 @@ Route::prefix('admin')->group(function () {
     Route::post('/logout', [AdminController::class, 'logout'])->name('logout');
 });
 
-// Admin Protected Routes with auth middleware
+// Admin Protected Routes with auth:admin middleware
 Route::prefix('admin')->middleware('auth:admin')->group(function () {
     Route::get('/groups', [AdminController::class, 'listGroup'])->name('admin.groups');
     Route::get('/groups/{id}/edit', [AdminController::class, 'editGroup'])->name('admin.groups.edit');
@@ -31,4 +31,7 @@ Route::prefix('admin')->middleware('auth:admin')->group(function () {
     Route::get('/schedules/{id}/edit', [AdminController::class, 'editSchedule'])->name('admin.schedules.edit');
     Route::put('/schedules/{id}', [AdminController::class, 'updateSchedule'])->name('admin.schedules.update');
     Route::delete('/schedules/{id}', [AdminController::class, 'deleteSchedule'])->name('admin.schedules.delete');
+
+    // Tambahkan rute untuk admin.users
+    Route::get('/users', [AdminController::class, 'listUsers'])->name('admin.users');
 });

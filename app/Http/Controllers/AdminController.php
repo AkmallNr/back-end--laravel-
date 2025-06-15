@@ -50,6 +50,12 @@ class AdminController extends Controller
         return redirect('/admin/login')->with('success', 'Logout successful!');
     }
 
+    public function listUsers()
+    {
+        $users = User::all(); // Ambil semua pengguna
+        return view('admin.users.index', compact('users')); // Pastikan ada view 'admin/users/index.blade.php'
+    }
+
     public function listGroup()
     {
         $groups = Group::all(); // Ambil semua grup tanpa relasi admin
