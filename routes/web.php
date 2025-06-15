@@ -9,7 +9,7 @@ Route::get('/features', [HomeController::class, 'features'])->name('features');
 Route::get('/download', [HomeController::class, 'download'])->name('download');
 
 // Admin Routes
-// Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () {
+Route::prefix('admin')->name('admin.')->group(function () {
     // User Management
     Route::get('/users', [AdminController::class, 'listUser'])->name('users');
     Route::get('/users/{id}/edit', [AdminController::class, 'editUser'])->name('users.edit');
@@ -33,4 +33,4 @@ Route::get('/download', [HomeController::class, 'download'])->name('download');
     Route::get('/schedules/{id}/edit', [AdminController::class, 'editSchedule'])->name('schedules.edit');
     Route::put('/schedules/{id}', [AdminController::class, 'updateSchedule'])->name('schedules.update');
     Route::delete('/schedules/{id}', [AdminController::class, 'deleteSchedule'])->name('schedules.delete');
-// });
+});
