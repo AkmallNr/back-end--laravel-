@@ -9,7 +9,7 @@
                 <div class="sm:text-center lg:text-left">
                     <h1 class="text-4xl tracking-tight font-bold text-gray-900 sm:text-5xl md:text-6xl">
                         <span class="block">Atur</span>
-                        <span class="block text-orange-400">Tugas,</span>,
+                        <span class="block text-orange-400">Tugas</span>
                         <span class="text-orange-400">Jadwal</span>,
                         <span class="block">dan
                             <span class="text-orange-400">Fokusmu</span>
@@ -23,8 +23,8 @@
                     </p>
                     <div class="mt-5 sm:mt-8 sm:flex sm:justify-center lg:justify-start">
                         <div class="rounded-md shadow">
-                            <a href="#" class="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-orange-400 hover:bg-orange-500 md:py-4 md:text-lg md:px-10 transition-colors">
-                                Download Now
+                            <a href="{{ route('home') }}#features" class="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-orange-400 hover:bg-orange-500 md:py-4 md:text-lg md:px-10 transition-colors">
+                                Jelajahi Fitur Kami
                             </a>
                         </div>
                     </div>

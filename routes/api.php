@@ -27,6 +27,8 @@ Route::prefix('users')->group(function () {
     // Mendapatkan tugas berdasarkan projectId
     Route::get('{userId}/groups/{groupId}/projects/{projectId}/tasks', [UserController::class, 'getTasks']);
 
+    Route::get('/tasks/without-group/{userId}/{projectId}', [UserController::class, 'getTaskWithoutGroup']);
+
     // Route untuk group tidak mandatory
     Route::post('{userId}/projects', [UserController::class, 'addProjectToUser']);
 
@@ -52,13 +54,13 @@ Route::prefix('users')->group(function () {
     Route::delete('{userId}/groups/{groupId}', [UserController::class, 'deleteGroup']);
 
     // Menghapus project
-    Route::delete('{userId}/groups/{groupId}/projects/{projectId}', [UserController::class, 'deleteProject']);
+    Route::delete('{userId}/projects/{projectId}', [UserController::class, 'deleteProject']);
 
     // Menghapus task
     Route::delete('{userId}/groups/{groupId}/projects/{projectId}/tasks/{taskId}', [UserController::class, 'deleteTask']);
 
     // Update task
-    Route::put('{userId}/groups/{groupId}/projects/{projectId}/tasks/{taskId}', [UserController::class, 'updateTask']);
+    Route::put('{userId}/projects/{projectId}/tasks/{taskId}', [UserController::class, 'updateTask']);
 
     // Update project
     Route::put('{userId}/groups/{groupId}/projects/{projectId}', [UserController::class, 'updateProject']);

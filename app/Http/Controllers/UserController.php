@@ -63,22 +63,14 @@ class UserController extends Controller
             return response()->json(['message' => 'User not found'], Response::HTTP_NOT_FOUND);
         }
 
-        // Ambil semua proyek yang terkait langsung dengan user (groupId bisa null atau tidak ada)
-        $directProjects = Project::where('userId', $userId)->get();
-
-        // Ambil proyek dari grup yang terkait dengan user
         $groups = $user->groups;
-        $groupProjects = collect();
+        $projects = collect();
 
         foreach ($groups as $group) {
-            $groupProjects = $groupProjects->merge($group->projects);
+            $projects = $projects->merge($group->projects);
         }
 
-        // Gabungkan proyek langsung dan proyek dari grup, hapus duplikat jika ada
-        $allProjects = $directProjects->merge($groupProjects)->unique('id');
-
-        // Kembalikan koleksi proyek dalam format resource
-        return ProjectResource::collection($allProjects);
+        return ProjectResource::collection($projects);
     }
 
     public function getTaskByUser($userId)
@@ -378,44 +370,22 @@ class UserController extends Controller
     }
 
     // 🔹 Menambahkan Project ke Group
-    public function addProjectToGroup(Request $request, $userId, $groupId = null)
+    public function addProjectToGroup(Request $request, $userId, $groupId)
     {
         $user = User::find($userId);
         if (!$user) {
             return response()->json(['message' => 'User not found'], Response::HTTP_NOT_FOUND);
         }
 
-        // Validasi input
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'startDate' => 'nullable|date',
-            'endDate' => 'nullable|date|after_or_equal:startDate',
-        ]);
-
-        // Jika groupId diberikan, pastikan grup ada dan terkait dengan user
-        $group = null;
-        if ($groupId) {
-            $group = $user->groups()->find($groupId);
-            if (!$group) {
-                return response()->json(['message' => 'Group not found or not associated with user'], Response::HTTP_NOT_FOUND);
-            }
+        $group = $user->groups()->find($groupId);
+        if (!$group) {
+            return response()->json(['message' => 'Group not found'], Response::HTTP_NOT_FOUND);
         }
 
-        // Buat proyek baru
-        $project = new Project($validated);
-        $project->userId = $userId; // Set userId
-        $project->groupId = $groupId; // Set groupId (bisa null)
-
-        // Simpan proyek
-        $project->save();
+        $project = new Project($request->all());
+        $group->projects()->save($project);
 
         return new ProjectResource($project);
-    }
-
-    public function addProjectToUser(Request $request, $userId)
-    {
-        return $this->addProjectToGroup($request, $userId, null);
     }
 
     // 🔹 Menambahkan Task ke Project
@@ -883,59 +853,6 @@ public function loginWithGoogle(Request $request)
         } catch (\Exception $e) {
             Log::error("Gagal menghitung tugas selesai mingguan: {$e->getMessage()}", ['exception' => $e]);
             return response()->json(['error' => 'Gagal menghitung tugas selesai'], Response::HTTP_INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    public function getSchedulesByDateRange($userId, Request $request)
-    {
-        try {
-            // Log data yang diterima
-            Log::debug("Received request: userId=$userId, startDate={$request->input('startDate')}, endDate={$request->input('endDate')}");
-
-            // Validasi input
-            $validated = $request->validate([
-                'startDate' => 'required|date_format:d/m/Y',
-                'endDate' => 'required|date_format:d/m/Y|after_or_equal:startDate',
-            ]);
-
-            // Parse tanggal menggunakan createFromFormat
-            $startDate = Carbon::createFromFormat('d/m/Y', $validated['startDate'])->startOfDay();
-            $endDate = Carbon::createFromFormat('d/m/Y', $validated['endDate'])->endOfDay();
-
-            Log::debug("Fetching schedules for userId: $userId, startDate: $startDate, endDate: $endDate");
-
-            // Query untuk mengambil jadwal
-            $schedules = Schedule::where('userId', $userId)
-                ->where(function ($query) use ($startDate, $endDate) {
-                    $query->whereRaw("TO_DATE(SUBSTRING(\"startTime\", 1, 10), 'DD/MM/YYYY') >= ?", [$startDate])
-                        ->whereRaw("TO_DATE(SUBSTRING(\"endTime\", 1, 10), 'DD/MM/YYYY') <= ?", [$endDate]);
-                })
-                ->get();
-
-            if ($schedules->isEmpty()) {
-                return response()->json([
-                    'message' => 'No schedules found for the given date range.',
-                    'data' => []
-                ], 200);
-            }
-
-            return response()->json([
-                'message' => 'Schedules retrieved successfully.',
-                'data' => $schedules
-            ], 200);
-
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            Log::error("Validation failed: " . json_encode($e->errors()));
-            return response()->json([
-                'message' => 'Validation failed.',
-                'errors' => $e->errors()
-            ], 422);
-        } catch (\Exception $e) {
-            Log::error("Error fetching schedules: {$e->getMessage()}");
-            return response()->json([
-                'message' => 'An error occurred while fetching schedules.',
-                'error' => $e->getMessage()
-            ], 500);
         }
     }
 }
