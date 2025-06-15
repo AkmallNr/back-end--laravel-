@@ -44,56 +44,54 @@ class AdminController extends Controller
 
     public function logout(Request $request)
     {
-        Auth::guard('admin')->logout(); // Logout menggunakan guard admin
+        Auth::guard('admin')->logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
         return redirect('/admin/login')->with('success', 'Logout successful!');
     }
 
-    public function listUsers()
-    {
-        $users = User::all(); // Ambil semua pengguna
-        return view('admin.users.index', compact('users')); // Pastikan ada view 'admin/users/index.blade.php'
-    }
-
     public function listGroup()
     {
-        $groups = Group::all(); // Ambil semua grup tanpa relasi admin
+        $groups = Group::all();
         return view('admin.groups.index', compact('groups'));
     }
 
     public function editGroup($id)
     {
-        $group = Project::findOrFail($id);
-        $admins = Admin::all();
+        $group = Group::findOrFail($id);
         $users = User::all();
-        return view('admin.groups.edit', compact('group', 'admins', 'users'));
+        return view('admin.groups.edit', compact('group', 'users'));
     }
 
     public function updateGroup(Request $request, $id)
     {
-        $group = Project::findOrFail($id);
+        $group = Group::findOrFail($id);
 
         $request->validate([
             'name' => 'required|string|max:255',
+            'belong_to' => 'required|exists:users,id',
             'description' => 'nullable|string',
-            'startDate' => 'required|date',
-            'endDate' => 'required|date|after:startDate',
-            'adminId' => 'nullable|exists:admins,id',
-            'userId' => 'nullable|exists:users,id',
+            'start_date' => 'required|date',
+            'end_date' => 'required|date|after:start_date',
         ]);
 
-        $group->update($request->only(['name', 'description', 'startDate', 'endDate', 'adminId', 'userId']));
+        $group->update([
+            'name' => $request->name,
+            'userId' => $request->belong_to, // Sesuaikan dengan kolom relasi di model Group
+            'description' => $request->description,
+            'startDate' => $request->start_date,
+            'endDate' => $request->end_date,
+        ]);
 
         return redirect()->route('admin.groups')->with('success', 'Group updated successfully');
     }
 
     public function deleteGroup($id)
     {
-        $group = Project::findOrFail($id);
+        $group = Group::findOrFail($id);
 
-        if ($group->tasks()->exists()) {
-            return redirect()->route('admin.groups')->with('error', 'Cannot delete group with associated tasks.');
+        if ($group->projects()->exists()) {
+            return redirect()->route('admin.groups')->with('error', 'Cannot delete group with associated projects.');
         }
 
         $group->delete();
@@ -101,20 +99,18 @@ class AdminController extends Controller
         return redirect()->route('admin.groups')->with('success', 'Group deleted successfully');
     }
 
-    // Task Management
     public function listTask()
     {
-        $tasks = Task::with('user', 'project')->get(); // Hapus 'admin' dari with
+        $tasks = Task::with('user', 'project')->get();
         return view('admin.tasks.index', compact('tasks'));
     }
 
     public function editTask($id)
     {
         $task = Task::findOrFail($id);
-        $admins = Admin::all();
         $users = User::all();
         $projects = Project::all();
-        return view('admin.tasks.edit', compact('task', 'admins', 'users', 'projects'));
+        return view('admin.tasks.edit', compact('task', 'users', 'projects'));
     }
 
     public function updateTask(Request $request, $id)
@@ -123,18 +119,25 @@ class AdminController extends Controller
 
         $request->validate([
             'name' => 'required|string|max:255',
+            'belong_to' => 'required|exists:users,id',
             'description' => 'nullable|string',
             'deadline' => 'required|date',
-            'reminder' => 'nullable|date',
             'priority' => 'required|in:low,medium,high',
             'status' => 'required|boolean',
             'completed_at' => 'nullable|date',
             'projectId' => 'nullable|exists:projects,id',
-            'adminId' => 'nullable|exists:admins,id',
-            'userId' => 'nullable|exists:users,id',
         ]);
 
-        $task->update($request->only(['name', 'description', 'deadline', 'reminder', 'priority', 'status', 'completed_at', 'projectId', 'adminId', 'userId']));
+        $task->update([
+            'name' => $request->name,
+            'userId' => $request->belong_to, // Sesuaikan dengan kolom relasi di model Task
+            'description' => $request->description,
+            'deadline' => $request->deadline,
+            'priority' => $request->priority,
+            'status' => $request->status,
+            'completed_at' => $request->completed_at,
+            'projectId' => $request->projectId,
+        ]);
 
         return redirect()->route('admin.tasks')->with('success', 'Task updated successfully');
     }
@@ -157,19 +160,17 @@ class AdminController extends Controller
         return redirect()->route('admin.tasks')->with('success', 'Task deleted successfully');
     }
 
-    // Schedule Management
     public function listSchedule()
     {
-        $schedules = Schedule::with('user')->get(); // Hapus 'admin' dari with
+        $schedules = Schedule::with('user')->get();
         return view('admin.schedules.index', compact('schedules'));
     }
 
     public function editSchedule($id)
     {
         $schedule = Schedule::findOrFail($id);
-        $admins = Admin::all();
         $users = User::all();
-        return view('admin.schedules.edit', compact('schedule', 'admins', 'users'));
+        return view('admin.schedules.edit', compact('schedule', 'users'));
     }
 
     public function updateSchedule(Request $request, $id)
@@ -178,16 +179,19 @@ class AdminController extends Controller
 
         $request->validate([
             'name' => 'required|string|max:255',
+            'belong_to' => 'required|exists:users,id',
             'notes' => 'nullable|string',
-            'repeat' => 'nullable|string',
-            'day' => 'nullable|string',
             'startTime' => 'required|date_format:H:i',
             'endTime' => 'required|date_format:H:i|after:startTime',
-            'adminId' => 'nullable|exists:admins,id',
-            'userId' => 'nullable|exists:users,id',
         ]);
 
-        $schedule->update($request->only(['name', 'notes', 'repeat', 'day', 'startTime', 'endTime', 'adminId', 'userId']));
+        $schedule->update([
+            'name' => $request->name,
+            'userId' => $request->belong_to, // Sesuaikan dengan kolom relasi di model Schedule
+            'notes' => $request->notes,
+            'startTime' => $request->startTime,
+            'endTime' => $request->endTime,
+        ]);
 
         return redirect()->route('admin.schedules')->with('success', 'Schedule updated successfully');
     }
@@ -200,19 +204,17 @@ class AdminController extends Controller
         return redirect()->route('admin.schedules')->with('success', 'Schedule deleted successfully');
     }
 
+    public function listUsers()
+    {
+        $users = User::all();
+        return view('admin.users.index', compact('users'));
+    }
+
     public function editUser($id)
     {
         $user = User::findOrFail($id);
-        $admins = Admin::all(); // Jika diperlukan untuk dropdown atau logika lain
-        return view('admin.users.edit', compact('user', 'admins')); // Pastikan ada view 'admin/users/edit.blade.php'
-    }
-
-    public function deleteUser($id)
-    {
-        $user = User::findOrFail($id);
-        $user->delete();
-
-        return redirect()->route('admin.users')->with('success', 'User deleted successfully');
+        $admins = Admin::all(); // Jika diperlukan
+        return view('admin.users.edit', compact('user', 'admins'));
     }
 
     public function updateUser(Request $request, $id)
@@ -222,10 +224,29 @@ class AdminController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email,' . $id,
+            'google_id' => 'nullable|string',
+            'profile_picture' => 'nullable|image|max:2048', // Maksimal 2MB
         ]);
 
-        $user->update($request->only(['name', 'email']));
+        $data = $request->only(['name', 'email', 'google_id']);
+
+        if ($request->hasFile('profile_picture')) {
+            if ($user->profile_picture && Storage::disk('public')->exists($user->profile_picture)) {
+                Storage::disk('public')->delete($user->profile_picture);
+            }
+            $data['profile_picture'] = $request->file('profile_picture')->store('profile_pictures', 'public');
+        }
+
+        $user->update($data);
 
         return redirect()->route('admin.users')->with('success', 'User updated successfully');
+    }
+
+    public function deleteUser($id)
+    {
+        $user = User::findOrFail($id);
+        $user->delete();
+
+        return redirect()->route('admin.users')->with('success', 'User deleted successfully');
     }
 }

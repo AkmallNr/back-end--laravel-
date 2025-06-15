@@ -31,7 +31,7 @@
                     <select class="form-select @error('belong_to') is-invalid @enderror" id="belong_to" name="belong_to" required>
                         <option value="">Select User</option>
                         @foreach($users as $user)
-                            <option value="{{ $user->id }}" {{ old('belong_to', $schedule->belong_to) == $user->id ? 'selected' : '' }}>
+                            <option value="{{ $user->id }}" {{ old('belong_to', $schedule->userId) == $user->id ? 'selected' : '' }}>
                                 {{ $user->name }}
                             </option>
                         @endforeach
@@ -44,64 +44,32 @@
         </div>
         
         <div class="mb-3">
-            <label for="description" class="form-label">Description</label>
-            <textarea class="form-control @error('description') is-invalid @enderror" 
-                      id="description" name="description" rows="3">{{ old('description', $schedule->description) }}</textarea>
-            @error('description')
+            <label for="notes" class="form-label">Notes</label>
+            <textarea class="form-control @error('notes') is-invalid @enderror" 
+                      id="notes" name="notes" rows="3">{{ old('notes', $schedule->notes) }}</textarea>
+            @error('notes')
                 <div class="invalid-feedback">{{ $message }}</div>
             @enderror
         </div>
         
         <div class="row">
-            <div class="col-md-4">
-                <div class="mb-3">
-                    <label for="deadline" class="form-label">Deadline</label>
-                    <input type="datetime-local" class="form-control @error('deadline') is-invalid @enderror" 
-                           id="deadline" name="deadline" value="{{ old('deadline', $schedule->deadline ? date('Y-m-d\TH:i', strtotime($schedule->deadline)) : '') }}" required>
-                    @error('deadline')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                    @enderror
-                </div>
-            </div>
-            
-            <div class="col-md-4">
-                <div class="mb-3">
-                    <label for="priority" class="form-label">Priority</label>
-                    <select class="form-select @error('priority') is-invalid @enderror" id="priority" name="priority" required>
-                        <option value="">Select Priority</option>
-                        <option value="low" {{ old('priority', $schedule->priority) == 'low' ? 'selected' : '' }}>Low</option>
-                        <option value="medium" {{ old('priority', $schedule->priority) == 'medium' ? 'selected' : '' }}>Medium</option>
-                        <option value="high" {{ old('priority', $schedule->priority) == 'high' ? 'selected' : '' }}>High</option>
-                    </select>
-                    @error('priority')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                    @enderror
-                </div>
-            </div>
-            
-            <div class="col-md-4">
-                <div class="mb-3">
-                    <label for="status" class="form-label">Status</label>
-                    <select class="form-select @error('status') is-invalid @enderror" id="status" name="status" required>
-                        <option value="">Select Status</option>
-                        <option value="pending" {{ old('status', $schedule->status) == 'pending' ? 'selected' : '' }}>Pending</option>
-                        <option value="in_progress" {{ old('status', $schedule->status) == 'in_progress' ? 'selected' : '' }}>In Progress</option>
-                        <option value="completed" {{ old('status', $schedule->status) == 'completed' ? 'selected' : '' }}>Completed</option>
-                    </select>
-                    @error('status')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                    @enderror
-                </div>
-            </div>
-        </div>
-        
-        <div class="row">
             <div class="col-md-6">
                 <div class="mb-3">
-                    <label for="completed_at" class="form-label">Completed At</label>
-                    <input type="datetime-local" class="form-control @error('completed_at') is-invalid @enderror" 
-                           id="completed_at" name="completed_at" value="{{ old('completed_at', $schedule->completed_at ? date('Y-m-d\TH:i', strtotime($schedule->completed_at)) : '') }}">
-                    @error('completed_at')
+                    <label for="startTime" class="form-label">Start Time</label>
+                    <input type="time" class="form-control @error('startTime') is-invalid @enderror" 
+                           id="startTime" name="startTime" value="{{ old('startTime', $schedule->startTime) }}" required>
+                    @error('startTime')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <label for="endTime" class="form-label">End Time</label>
+                    <input type="time" class="form-control @error('endTime') is-invalid @enderror" 
+                           id="endTime" name="endTime" value="{{ old('endTime', $schedule->endTime) }}" required>
+                    @error('endTime')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
                 </div>

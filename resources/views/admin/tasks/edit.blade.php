@@ -31,7 +31,7 @@
                     <select class="form-select @error('belong_to') is-invalid @enderror" id="belong_to" name="belong_to" required>
                         <option value="">Select User</option>
                         @foreach($users as $user)
-                            <option value="{{ $user->id }}" {{ old('belong_to', $task->belong_to) == $user->id ? 'selected' : '' }}>
+                            <option value="{{ $user->id }}" {{ old('belong_to', $task->userId) == $user->id ? 'selected' : '' }}>
                                 {{ $user->name }}
                             </option>
                         @endforeach
@@ -84,9 +84,8 @@
                     <label for="status" class="form-label">Status</label>
                     <select class="form-select @error('status') is-invalid @enderror" id="status" name="status" required>
                         <option value="">Select Status</option>
-                        <option value="pending" {{ old('status', $task->status) == 'pending' ? 'selected' : '' }}>Pending</option>
-                        <option value="in_progress" {{ old('status', $task->status) == 'in_progress' ? 'selected' : '' }}>In Progress</option>
-                        <option value="completed" {{ old('status', $task->status) == 'completed' ? 'selected' : '' }}>Completed</option>
+                        <option value="1" {{ old('status', $task->status) == 1 ? 'selected' : '' }}>Completed</option>
+                        <option value="0" {{ old('status', $task->status) == 0 ? 'selected' : '' }}>Pending</option>
                     </select>
                     @error('status')
                         <div class="invalid-feedback">{{ $message }}</div>
@@ -102,6 +101,22 @@
                     <input type="datetime-local" class="form-control @error('completed_at') is-invalid @enderror" 
                            id="completed_at" name="completed_at" value="{{ old('completed_at', $task->completed_at ? date('Y-m-d\TH:i', strtotime($task->completed_at)) : '') }}">
                     @error('completed_at')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <label for="projectId" class="form-label">Project</label>
+                    <select class="form-select @error('projectId') is-invalid @enderror" id="projectId" name="projectId">
+                        <option value="">Select Project</option>
+                        @foreach($projects as $project)
+                            <option value="{{ $project->id }}" {{ old('projectId', $task->projectId) == $project->id ? 'selected' : '' }}>
+                                {{ $project->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                    @error('projectId')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
                 </div>

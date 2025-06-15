@@ -31,7 +31,7 @@
                     <select class="form-select @error('belong_to') is-invalid @enderror" id="belong_to" name="belong_to" required>
                         <option value="">Select User</option>
                         @foreach($users as $user)
-                            <option value="{{ $user->id }}" {{ old('belong_to', $group->belong_to) == $user->id ? 'selected' : '' }}>
+                            <option value="{{ $user->id }}" {{ old('belong_to', $group->userId) == $user->id ? 'selected' : '' }}>
                                 {{ $user->name }}
                             </option>
                         @endforeach
@@ -57,7 +57,7 @@
                 <div class="mb-3">
                     <label for="start_date" class="form-label">Start Date</label>
                     <input type="date" class="form-control @error('start_date') is-invalid @enderror" 
-                           id="start_date" name="start_date" value="{{ old('start_date', $group->start_date ? date('Y-m-d', strtotime($group->start_date)) : '') }}" required>
+                           id="start_date" name="start_date" value="{{ old('start_date', $group->startDate ? date('Y-m-d', strtotime($group->startDate)) : '') }}" required>
                     @error('start_date')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
@@ -68,7 +68,7 @@
                 <div class="mb-3">
                     <label for="end_date" class="form-label">End Date</label>
                     <input type="date" class="form-control @error('end_date') is-invalid @enderror" 
-                           id="end_date" name="end_date" value="{{ old('end_date', $group->end_date ? date('Y-m-d', strtotime($group->end_date)) : '') }}" required>
+                           id="end_date" name="end_date" value="{{ old('end_date', $group->endDate ? date('Y-m-d', strtotime($group->endDate)) : '') }}" required>
                     @error('end_date')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
