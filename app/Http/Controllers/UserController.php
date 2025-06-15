@@ -63,22 +63,14 @@ class UserController extends Controller
             return response()->json(['message' => 'User not found'], Response::HTTP_NOT_FOUND);
         }
 
-        // Ambil semua proyek yang terkait langsung dengan user (groupId bisa null atau tidak ada)
-        $directProjects = Project::where('userId', $userId)->get();
-
-        // Ambil proyek dari grup yang terkait dengan user
         $groups = $user->groups;
-        $groupProjects = collect();
+        $projects = collect();
 
         foreach ($groups as $group) {
-            $groupProjects = $groupProjects->merge($group->projects);
+            $projects = $projects->merge($group->projects);
         }
 
-        // Gabungkan proyek langsung dan proyek dari grup, hapus duplikat jika ada
-        $allProjects = $directProjects->merge($groupProjects)->unique('id');
-
-        // Kembalikan koleksi proyek dalam format resource
-        return ProjectResource::collection($allProjects);
+        return ProjectResource::collection($projects);
     }
 
     public function getTaskByUser($userId)
@@ -289,44 +281,6 @@ class UserController extends Controller
         return ProjectResource::collection($projects);
     }
 
-    public function getTaskWithoutGroup($userId, $projectId)
-    {
-        $tasks = []; // Inisialisasi variabel $tasks sebelum try-catch
-
-        try {
-            // Validasi input
-            $userId = (int) $userId;
-            $projectId = (int) $projectId;
-
-            if ($userId <= 0 || $projectId <= 0) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'User ID atau Project ID tidak valid',
-                    'data' => []
-                ], Response::HTTP_BAD_REQUEST);
-            }
-
-            // Ambil tugas berdasarkan userId dan projectId
-            $tasks = Task::where('userId', $userId) // Perbaiki 'userId' menjadi 'user_id'
-                ->where('projectId', $projectId) // Perbaiki 'projectId' menjadi 'project_id'
-                ->get();
-
-            // Kembalikan response menggunakan TaskResource
-            return TaskResource::collection($tasks)
-                ->additional([
-                    'status' => 'success',
-                    'message' => 'Tugas berhasil diambil'
-                ]);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Terjadi kesalahan: ' . $e->getMessage(),
-                'data' => []
-            ], Response::HTTP_INTERNAL_SERVER_ERROR);
-        }
-    }
-
     // 🔹 Mendapatkan semua tugas berdasarkan projectId
     public function getTasks($userId, $groupId, $projectId)
     {
@@ -341,7 +295,7 @@ class UserController extends Controller
         Log::info('User ID: ' . $userId);
         Log::info('Project Group User ID: ' . $project->group->user->id);
 
-        if ($project->user->id != $userId) {
+        if ($project->group->id != $groupId || $project->group->user->id != $userId) {
             return response()->json(['message' => 'Forbidden'], Response::HTTP_FORBIDDEN);
         }
 
@@ -364,7 +318,7 @@ class UserController extends Controller
         Log::info('User ID: ' . $userId);
         Log::info('Project Group User ID: ' . $project->group->user->id);
 
-        if ($project->user->id != $userId) {
+        if ($project->group->id != $groupId || $project->group->user->id != $userId) {
             return response()->json(['message' => 'Forbidden'], Response::HTTP_FORBIDDEN);
         }
 
@@ -416,44 +370,22 @@ class UserController extends Controller
     }
 
     // 🔹 Menambahkan Project ke Group
-    public function addProjectToGroup(Request $request, $userId, $groupId = null)
+    public function addProjectToGroup(Request $request, $userId, $groupId)
     {
         $user = User::find($userId);
         if (!$user) {
             return response()->json(['message' => 'User not found'], Response::HTTP_NOT_FOUND);
         }
 
-        // Validasi input
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'startDate' => 'nullable|date',
-            'endDate' => 'nullable|date|after_or_equal:startDate',
-        ]);
-
-        // Jika groupId diberikan, pastikan grup ada dan terkait dengan user
-        $group = null;
-        if ($groupId) {
-            $group = $user->groups()->find($groupId);
-            if (!$group) {
-                return response()->json(['message' => 'Group not found or not associated with user'], Response::HTTP_NOT_FOUND);
-            }
+        $group = $user->groups()->find($groupId);
+        if (!$group) {
+            return response()->json(['message' => 'Group not found'], Response::HTTP_NOT_FOUND);
         }
 
-        // Buat proyek baru
-        $project = new Project($validated);
-        $project->userId = $userId; // Set userId
-        $project->groupId = $groupId; // Set groupId (bisa null)
-
-        // Simpan proyek
-        $project->save();
+        $project = new Project($request->all());
+        $group->projects()->save($project);
 
         return new ProjectResource($project);
-    }
-
-    public function addProjectToUser(Request $request, $userId)
-    {
-        return $this->addProjectToGroup($request, $userId, null);
     }
 
     // 🔹 Menambahkan Task ke Project
@@ -544,10 +476,10 @@ class UserController extends Controller
     }
 
     // 🔹 Menghapus Project
-    public function deleteProject($userId, $projectId)
+    public function deleteProject($userId, $groupId, $projectId)
     {
         $project = Project::find($projectId);
-        if (!$project || $project->user->id != $userId) {
+        if (!$project || $project->group->id != $groupId || $project->group->user->id != $userId) {
             return response()->json(['message' => 'Forbidden'], Response::HTTP_FORBIDDEN);
         }
 
@@ -556,102 +488,19 @@ class UserController extends Controller
     }
 
     // 🔹 Menghapus Task
-    public function deleteTask($userId, $projectId, $taskId)
+    public function deleteTask($userId, $groupId, $projectId, $taskId)
     {
-        try {
-            // Validasi input
-            $userId = (int) $userId;
-            $projectId = (int) $projectId;
-            $taskId = (int) $taskId;
-
-            if ($userId <= 0 || $projectId <= 0 || $taskId <= 0) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'User ID, Project ID, atau Task ID tidak valid',
-                    'data' => []
-                ], Response::HTTP_BAD_REQUEST);
-            }
-
-            // Cari dan hapus task
-            $task = Task::where('userId', $userId)
-                ->where('projectId', $projectId)
-                ->where('id', $taskId)
-                ->first();
-
-            if (!$task) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'Tugas tidak ditemukan atau Anda tidak memiliki akses',
-                    'data' => []
-                ], Response::HTTP_NOT_FOUND);
-            }
-
-            $task->delete();
-
-            return response()->json([
-                'status' => 'success',
-                'message' => 'Tugas berhasil dihapus',
-                'data' => []
-            ], Response::HTTP_OK);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Terjadi kesalahan: ' . $e->getMessage(),
-                'data' => []
-            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        $task = Task::find($taskId);
+        if (!$task || $task->project->id != $projectId || $task->project->group->id != $groupId || $task->project->group->user->id != $userId) {
+            return response()->json(['message' => 'Forbidden'], Response::HTTP_FORBIDDEN);
         }
-    }
 
-    public function deleteTaskWithoutGroup($userId, $projectId, $taskId)
-    {
-        try {
-            // Validasi input
-            $userId = (int) $userId;
-            $projectId = (int) $projectId;
-            $taskId = (int) $taskId;
-
-            if ($userId <= 0 || $projectId <= 0 || $taskId <= 0) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'User ID, Project ID, atau Task ID tidak valid',
-                    'data' => []
-                ], Response::HTTP_BAD_REQUEST);
-            }
-
-            // Cari dan hapus task
-            $task = Task::where('userId', $userId)
-                ->where('projectId', $projectId)
-                ->where('id', $taskId)
-                ->first();
-
-            if (!$task) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'Tugas tidak ditemukan atau Anda tidak memiliki akses',
-                    'data' => []
-                ], Response::HTTP_NOT_FOUND);
-            }
-
-            $task->delete();
-
-            return response()->json([
-                'status' => 'success',
-                'message' => 'Tugas berhasil dihapus',
-                'data' => []
-            ], Response::HTTP_OK);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Terjadi kesalahan: ' . $e->getMessage(),
-                'data' => []
-            ], Response::HTTP_INTERNAL_SERVER_ERROR);
-        }
+        $task->delete();
+        return response()->json(['message' => 'Task deleted'], Response::HTTP_OK);
     }
 
     // 🔹 Update Task
-    public function updateTask($userId, $projectId, $taskId, \Illuminate\Http\Request $request)
+    public function updateTask($userId, $groupId, $projectId, $taskId, \Illuminate\Http\Request $request)
     {
         $project = Project::find($projectId);
 
@@ -659,15 +508,14 @@ class UserController extends Controller
             return response()->json(['message' => 'Project not found'], Response::HTTP_NOT_FOUND);
         }
 
-        if ($project->user->id != $userId) {
+        if ($project->group->id != $groupId || $project->group->user->id != $userId) {
             return response()->json(['message' => 'Forbidden'], Response::HTTP_FORBIDDEN);
         }
 
         try {
-            $task = Task::where('userId', $userId)
+            $task = Task::where('id', $taskId)
                 ->where('projectId', $projectId)
-                ->where('id', $taskId)
-                ->first();
+                ->firstOrFail();
 
             $task->update([
                 'name' => $request->name,
@@ -694,78 +542,6 @@ class UserController extends Controller
         } catch (\Exception $e) {
             Log::error("Gagal memperbarui tugas: {$e->getMessage()}", ['exception' => $e]);
             return response()->json(['error' => 'Gagal memperbarui tugas'], Response::HTTP_INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    public function updateTaskWithoutGroup(Request $request, $userId, $projectId, $taskId)
-    {
-        try {
-            // Validasi input
-            $userId = (int) $userId;
-            $projectId = (int) $projectId;
-            $taskId = (int) $taskId;
-
-            if ($userId <= 0 || $projectId <= 0 || $taskId <= 0) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'User ID, Project ID, atau Task ID tidak valid',
-                    'data' => []
-                ], Response::HTTP_BAD_REQUEST);
-            }
-
-            // Validasi data request
-            $validator = Validator::make($request->all(), [
-                'name' => 'sometimes|string|max:255',
-                'description' => 'sometimes|string',
-                'deadline' => 'sometimes|date',
-                'reminder' => 'sometimes|date',
-                'priority' => 'sometimes|in:Low,Normal,High',
-                'attachment' => 'sometimes|string',
-                'status' => 'sometimes|boolean',
-            ]);
-
-            if ($validator->fails()) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'Validasi gagal: ' . $validator->errors()->first(),
-                    'data' => []
-                ], Response::HTTP_BAD_REQUEST);
-            }
-
-            // Cari task
-            $task = Task::where('userId', $userId)
-                ->where('projectId', $projectId)
-                ->where('id', $taskId)
-                ->first();
-
-            if (!$task) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'Tugas tidak ditemukan atau Anda tidak memiliki akses',
-                    'data' => []
-                ], Response::HTTP_NOT_FOUND);
-            }
-
-            // Update task dengan data dari request
-            $task->update(array_filter($request->only([
-                'name', 'description', 'deadline', 'reminder', 'priority', 'attachment', 'status'
-            ])));
-
-            // Ambil task yang sudah diperbarui untuk dikembalikan
-            $updatedTask = Task::find($taskId);
-
-            return TaskResource::make($updatedTask)
-                ->additional([
-                    'status' => 'success',
-                    'message' => 'Tugas berhasil diperbarui'
-                ]);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Terjadi kesalahan: ' . $e->getMessage(),
-                'data' => []
-            ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -1077,59 +853,6 @@ public function loginWithGoogle(Request $request)
         } catch (\Exception $e) {
             Log::error("Gagal menghitung tugas selesai mingguan: {$e->getMessage()}", ['exception' => $e]);
             return response()->json(['error' => 'Gagal menghitung tugas selesai'], Response::HTTP_INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    public function getSchedulesByDateRange($userId, Request $request)
-    {
-        try {
-            // Log data yang diterima
-            Log::debug("Received request: userId=$userId, startDate={$request->input('startDate')}, endDate={$request->input('endDate')}");
-
-            // Validasi input
-            $validated = $request->validate([
-                'startDate' => 'required|date_format:d/m/Y',
-                'endDate' => 'required|date_format:d/m/Y|after_or_equal:startDate',
-            ]);
-
-            // Parse tanggal menggunakan createFromFormat
-            $startDate = Carbon::createFromFormat('d/m/Y', $validated['startDate'])->startOfDay();
-            $endDate = Carbon::createFromFormat('d/m/Y', $validated['endDate'])->endOfDay();
-
-            Log::debug("Fetching schedules for userId: $userId, startDate: $startDate, endDate: $endDate");
-
-            // Query untuk mengambil jadwal
-            $schedules = Schedule::where('userId', $userId)
-                ->where(function ($query) use ($startDate, $endDate) {
-                    $query->whereRaw("TO_DATE(SUBSTRING(\"startTime\", 1, 10), 'DD/MM/YYYY') >= ?", [$startDate])
-                        ->whereRaw("TO_DATE(SUBSTRING(\"endTime\", 1, 10), 'DD/MM/YYYY') <= ?", [$endDate]);
-                })
-                ->get();
-
-            if ($schedules->isEmpty()) {
-                return response()->json([
-                    'message' => 'No schedules found for the given date range.',
-                    'data' => []
-                ], 200);
-            }
-
-            return response()->json([
-                'message' => 'Schedules retrieved successfully.',
-                'data' => $schedules
-            ], 200);
-
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            Log::error("Validation failed: " . json_encode($e->errors()));
-            return response()->json([
-                'message' => 'Validation failed.',
-                'errors' => $e->errors()
-            ], 422);
-        } catch (\Exception $e) {
-            Log::error("Error fetching schedules: {$e->getMessage()}");
-            return response()->json([
-                'message' => 'An error occurred while fetching schedules.',
-                'error' => $e->getMessage()
-            ], 500);
         }
     }
 }
